@@ -1,0 +1,593 @@
+import React, { useState, useRef } from "react";
+import {
+  Box,
+  Container,
+  Typography,
+  TextField,
+  Button,
+  CircularProgress,
+  Chip,
+  ToggleButton,
+  ToggleButtonGroup,
+  Paper,
+  Modal,
+  Checkbox,
+  FormControlLabel,
+  Divider,
+} from "@mui/material";
+
+import axios from "axios";
+import ImageIcon from "@mui/icons-material/Image";
+import AddIcon from "@mui/icons-material/Add";
+import Navbar from "../Components/navbar";
+import RecipeCard from "../Components/recipeCard";
+
+
+// ===========================================
+// OPTION B — PROFESSIONAL INGREDIENT DATASET
+// ===========================================
+const ingredientCategories = {
+  Vegetables: [
+    "Tomato","Onion","Potato","Garlic","Ginger","Spinach",
+    "Carrot","Capsicum","Broccoli","Cauliflower",
+    "Lettuce","Cabbage","Peas","Green Beans","Beetroot",
+  ],
+
+  Fruits: [
+    "Banana","Apple","Mango","Orange","Pineapple",
+    "Grapes","Strawberry","Watermelon","Avocado",
+  ],
+
+  Spices: [
+    "Salt","Pepper","Turmeric","Cumin","Coriander",
+    "Chili Powder","Garam Masala","Oregano",
+    "Basil","Rosemary","Thyme","Paprika",
+  ],
+
+  Dairy: ["Milk","Cheese","Butter","Yogurt","Cream"],
+
+  Protein: [
+    "Egg","Paneer","Tofu","Lentils","Chickpeas",
+    "Kidney Beans","Black Beans"
+  ],
+
+  Grains: [
+    "Rice","Wheat Flour","Oats","Pasta",
+    "Bread","Noodles","Quinoa"
+  ],
+
+  Sauces: [
+    "Olive Oil","Vegetable Oil","Soy Sauce",
+    "Vinegar","Tomato Ketchup","Mayonnaise"
+  ],
+};
+
+const dietOptions = [
+  "Vegetarian","Vegan","Gluten-Free",
+  "Dairy-Free","Keto","Halal"
+];
+
+
+
+const GenerateRecipe = () => {
+  const [ingredientInput, setIngredientInput] = useState("");
+  const [ingredients, setIngredients] = useState([]);
+
+  const [dietPreference, setDietPreference] = useState(null);
+
+  const [loading, setLoading] = useState(false);
+  const [recipes, setRecipes] = useState([]);
+
+  // Image Upload States
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [detectedIngredients, setDetectedIngredients] = useState([]);
+  const [imageLoading, setImageLoading] = useState(false);
+
+  // Add-from-list modal
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedListIngredients, setSelectedListIngredients] = useState([]);
+
+  const fileInputRef = useRef();
+
+
+
+  // Add manual ingredient
+  const handleAddIngredient = () => {
+    if (!ingredientInput.trim()) return;
+    setIngredients((prev) => [...prev, ingredientInput.trim()]);
+    setIngredientInput("");
+  };
+
+  const handleRemoveIngredient = (i) => {
+    setIngredients((prev) => prev.filter((_, idx) => idx !== i));
+  };
+
+  const handleDietChange = (_, value) => {
+    setDietPreference(value);
+  };
+
+
+  // Handle Image Upload + AI Detection
+  const handleImageUpload = async (event) => {
+    const file = event?.target?.files?.[0];
+    if (!file && selectedImage) {
+      // If clicking Detect Ingredients button
+      detectIngredients();
+      return;
+    }
+    if (!file) return;
+
+    setSelectedImage(URL.createObjectURL(file));
+  };
+
+
+  const detectIngredients = async () => {
+    if (!selectedImage) return;
+
+    setImageLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", fileInputRef.current.files[0]);
+
+      const res = await axios.post(
+        "http://localhost:5000/api/detect-ingredients",
+        formData
+      );
+
+      setDetectedIngredients(res.data.ingredients || []);
+      setIngredients((prev) => [...prev, ...res.data.ingredients]);
+
+    } catch (err) {
+      console.error(err);
+    }
+
+    setImageLoading(false);
+  };
+
+
+
+  // Add-from-list modal confirm
+  const handleAddFromList = () => {
+    setIngredients((prev) => [...prev, ...selectedListIngredients]);
+    setSelectedListIngredients([]);
+    setOpenModal(false);
+  };
+
+
+  // Main generate function
+  const handleGenerate = async () => {
+    if (ingredients.length === 0) return;
+
+    setLoading(true);
+    setRecipes([]);
+
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/recipes/find",
+        { ingredients, dietPreference }
+      );
+
+      setRecipes(res.data.recipes || []);
+
+    } catch (err) {
+      console.error(err);
+    }
+
+    setLoading(false);
+  };
+
+
+
+
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #E3F2FD, #E8EAF6)",
+      }}
+    >
+      <Navbar />
+
+      <Container sx={{ mt: 8, textAlign: "center" }}>
+        
+        {/* Title */}
+        <Typography
+          variant="h4"
+          fontWeight={800}
+          sx={{
+            background: "linear-gradient(45deg, #1e88e5, #6a1b9a)",
+            WebkitBackgroundClip: "text",
+            color: "transparent",
+            mb: 3,
+          }}
+        >
+          Generate Recipes
+        </Typography>
+
+        <Typography color="text.secondary" mb={4}>
+          Add ingredients manually, choose from a list, or upload an image.
+        </Typography>
+
+
+
+
+        {/* ---------------- INGREDIENT INPUT SECTION ---------------- */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 2,
+            flexWrap: "wrap",
+            mb: 3,
+          }}
+        >
+          <TextField
+            label="Add Ingredient"
+            value={ingredientInput}
+            onChange={(e) => setIngredientInput(e.target.value)}
+            sx={{
+              width: { xs: "100%", sm: "350px" },
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "14px",
+              },
+            }}
+          />
+
+          <Button
+            variant="contained"
+            onClick={handleAddIngredient}
+            sx={{ borderRadius: "14px" }}
+          >
+            Add
+          </Button>
+
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
+            sx={{ borderRadius: "14px" }}
+            onClick={() => setOpenModal(true)}
+          >
+            Add from List
+          </Button>
+        </Box>
+
+
+
+
+        {/* INGREDIENT CHIPS */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            flexWrap: "wrap",
+            gap: 1,
+            mb: 4,
+          }}
+        >
+          {ingredients.map((ing, i) => (
+            <Chip
+              key={i}
+              label={ing}
+              color="primary"
+              onDelete={() => handleRemoveIngredient(i)}
+            />
+          ))}
+        </Box>
+
+
+
+
+        {/* ---------------- PREMIUM IMAGE UPLOAD (AI STYLE) ---------------- */}
+        <Paper
+          sx={{
+            p: 4,
+            borderRadius: "22px",
+            maxWidth: 650,
+            mx: "auto",
+            mb: 5,
+            background: "rgba(255,255,255,0.65)",
+            backdropFilter: "blur(18px)",
+            boxShadow: "0px 8px 40px rgba(0,0,0,0.08)",
+            transition: "0.3s ease",
+            "&:hover": { boxShadow: "0px 12px 50px rgba(0,0,0,0.12)" },
+          }}
+        >
+          <Typography
+            variant="h6"
+            fontWeight={800}
+            sx={{
+              mb: 3,
+              textAlign: "center",
+              fontSize: "1.4rem",
+              background: "linear-gradient(45deg,#1e88e5,#6a1b9a)",
+              WebkitBackgroundClip: "text",
+              color: "transparent",
+            }}
+          >
+            AI Ingredient Detector
+          </Typography>
+
+          {/* Upload Box */}
+          <Box
+            onClick={() => fileInputRef.current.click()}
+            sx={{
+              borderRadius: "20px",
+              p: 4,
+              border: "2px solid rgba(30,136,229,0.25)",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.85), rgba(240,240,255,0.6))",
+              textAlign: "center",
+              cursor: "pointer",
+              transition: "0.3s ease",
+              "&:hover": {
+                borderColor: "#1e88e5",
+                background:
+                  "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(240,240,255,0.75))",
+              },
+            }}
+          >
+            <ImageIcon sx={{ fontSize: 70, color: "#1e88e5" }} />
+            <Typography fontSize="1rem" mt={1} fontWeight={600}>
+              Upload or Drag Image Here
+            </Typography>
+            <Typography color="text.secondary" fontSize="0.9rem">
+              Supported formats: JPG, PNG
+            </Typography>
+
+            <input
+              type="file"
+              hidden
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+            />
+          </Box>
+
+
+
+          {/* IMAGE PREVIEW */}
+          {selectedImage && (
+            <Box
+              sx={{
+                mt: 3,
+                borderRadius: "18px",
+                overflow: "hidden",
+                boxShadow: "0px 6px 20px rgba(0,0,0,0.15)",
+                animation: "fadeIn 0.4s ease",
+              }}
+            >
+              <img
+                src={selectedImage}
+                alt="preview"
+                style={{ width: "100%", objectFit: "cover" }}
+              />
+            </Box>
+          )}
+
+
+
+          {/* DETECT BUTTON */}
+          {selectedImage && (
+            <Button
+              variant="contained"
+              fullWidth
+              sx={{
+                mt: 3,
+                py: 1.4,
+                fontSize: "1rem",
+                borderRadius: "14px",
+                background: "linear-gradient(45deg,#1e88e5,#6a1b9a)",
+                textTransform: "none",
+              }}
+              onClick={detectIngredients}
+            >
+              Detect Ingredients
+            </Button>
+          )}
+
+
+
+          {/* LOADING */}
+          {imageLoading && (
+            <Box mt={2} textAlign="center">
+              <CircularProgress size={35} />
+            </Box>
+          )}
+
+
+
+          {/* DETECTED CHIP RESULTS */}
+          {detectedIngredients.length > 0 && !imageLoading && (
+            <Box sx={{ mt: 3 }}>
+              <Typography
+                fontWeight={700}
+                mb={1}
+                sx={{ textAlign:"center", fontSize:"1.1rem" }}
+              >
+                AI Detected Ingredients ({detectedIngredients.length})
+              </Typography>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  gap: 1,
+                }}
+              >
+                {detectedIngredients.map((ing, i) => (
+                  <Chip key={i} label={ing} color="secondary" />
+                ))}
+              </Box>
+            </Box>
+          )}
+
+        </Paper>
+
+
+
+
+        {/* ---------------- DIETARY PREFERENCES ---------------- */}
+        <Typography variant="h6" fontWeight={700} mt={3} mb={1}>
+          Dietary Preference
+        </Typography>
+
+        <ToggleButtonGroup
+          exclusive
+          value={dietPreference}
+          onChange={handleDietChange}
+          sx={{ flexWrap:"wrap", justifyContent:"center", gap:1.5, mb:4 }}
+        >
+          {dietOptions.map((opt) => (
+            <ToggleButton
+              key={opt}
+              value={opt}
+              sx={{
+                px:2.5, py:1,
+                borderRadius:"12px",
+                textTransform:"none",
+                "&.Mui-selected": {
+                  backgroundColor:"#1e88e5",
+                  color:"white",
+                },
+              }}
+            >
+              {opt}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+
+
+
+
+        {/* ---------------- GENERATE RECIPES ---------------- */}
+        <Button
+          variant="contained"
+          sx={{
+            px: 5,
+            py: 1.4,
+            fontSize: "1.1rem",
+            borderRadius: "14px",
+          }}
+          onClick={handleGenerate}
+        >
+          Find Recipes
+        </Button>
+
+
+
+
+        {/* ---------------- LOADING ---------------- */}
+        {loading && (
+          <Box mt={4}>
+            <CircularProgress size={40} />
+          </Box>
+        )}
+
+
+
+
+        {/* ---------------- RESULTS GRID ---------------- */}
+        {!loading && recipes.length > 0 && (
+          <Box
+            sx={{
+              mt: 5,
+              display: "grid",
+              gridTemplateColumns: {
+                xs:"1fr",
+                sm:"1fr 1fr",
+                md:"1fr 1fr 1fr"
+              },
+              gap: 4,
+            }}
+          >
+            {recipes.map((recipe) => (
+              <RecipeCard key={recipe.id} recipe={recipe} />
+            ))}
+          </Box>
+        )}
+
+        {!loading && recipes.length === 0 && (
+          <Typography mt={4} color="text.secondary">
+            No recipes yet — try adding ingredients or uploading an image.
+          </Typography>
+        )}
+
+
+
+
+      </Container>
+
+
+
+      {/* ---------------- MODAL: INGREDIENT LIST ---------------- */}
+      <Modal open={openModal} onClose={() => setOpenModal(false)}>
+        <Paper
+          sx={{
+            p: 4,
+            width:"90%",
+            maxWidth: 500,
+            mx:"auto",
+            mt:10,
+            borderRadius:"18px",
+            maxHeight:"80vh",
+            overflowY:"auto",
+          }}
+        >
+          <Typography variant="h6" fontWeight={700} mb={2}>
+            Choose Ingredients
+          </Typography>
+
+          {Object.entries(ingredientCategories).map(([category, items]) => (
+            <Box key={category} sx={{ mb: 2 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight={700}
+                color="primary"
+              >
+                {category}
+              </Typography>
+
+              {items.map((item) => (
+                <FormControlLabel
+                  key={item}
+                  control={
+                    <Checkbox
+                      checked={selectedListIngredients.includes(item)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedListIngredients((prev) => [...prev, item]);
+                        } else {
+                          setSelectedListIngredients((prev) =>
+                            prev.filter((x) => x !== item)
+                          );
+                        }
+                      }}
+                    />
+                  }
+                  label={item}
+                />
+              ))}
+
+              <Divider sx={{ my: 2 }} />
+            </Box>
+          ))}
+
+          <Button
+            variant="contained"
+            fullWidth
+            sx={{ mt: 2, py: 1.2 }}
+            onClick={handleAddFromList}
+          >
+            Add Selected
+          </Button>
+        </Paper>
+      </Modal>
+
+
+
+    </Box>
+  );
+};
+
+export default GenerateRecipe;
