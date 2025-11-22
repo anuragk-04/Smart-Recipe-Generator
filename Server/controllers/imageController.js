@@ -30,11 +30,9 @@ const detectWithVision = async (filePath) => {
 };
 
 const mockDetect = async (filePath) => {
-  // try to use filename for hints (e.g., tomato.jpg)
   const fname = filePath.toLowerCase();
   const found = LABELS.filter(lbl => fname.includes(lbl));
   if (found.length) return found;
-  // otherwise return top 3 random labels as a demo
   return LABELS.slice(0, 5).filter((_, i) => Math.random() > 0.4).slice(0,3);
 };
 
@@ -57,7 +55,6 @@ router.post("/detect-ingredients", upload.single("image"), async (req, res) => {
       ingredients = await mockDetect(filePath);
     }
 
-    // optional: remove upload after detection
     setTimeout(() => {
       try { fs.unlinkSync(filePath); } catch(e){/*ignore*/ }
     }, 60 * 1000);

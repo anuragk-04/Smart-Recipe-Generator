@@ -18,13 +18,13 @@ const HomePage = () => {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Redirect if user isn’t logged in
+  //  Redirect if user isn’t logged in
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) navigate("/");
   }, [navigate]);
 
-  // ✅ Fetch all recipes sorted: favorites → rating → newest
+  //  Fetch all recipes sorted: favorites → rating → newest
   useEffect(() => {
     const fetchHomeRecipes = async () => {
       try {

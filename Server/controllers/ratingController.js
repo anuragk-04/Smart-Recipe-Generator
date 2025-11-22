@@ -8,7 +8,7 @@ export const rateRecipe = async (req, res) => {
   const recipe = await Recipe.findById(recipeId);
   if (!recipe) return res.status(404).json({ message: "Recipe not found" });
 
-  // ✅ Check if user already rated
+  //  Check if user already rated
   const existing = recipe.ratings.find(
     (r) => r.user.toString() === userId.toString()
   );
@@ -22,7 +22,7 @@ export const rateRecipe = async (req, res) => {
     recipe.ratingCount += 1;
   }
 
-  // ✅ Recalculate average
+  //  Recalculate average
   const total = recipe.ratings.reduce((sum, r) => sum + r.value, 0);
   recipe.averageRating = Number((total / recipe.ratingCount).toFixed(2));
 

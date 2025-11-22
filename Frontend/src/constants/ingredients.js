@@ -1,4 +1,4 @@
-// ✅ Ingredient categories dataset
+// Ingredient categories dataset
 export const ingredientCategories = {
   Vegetables: [
     "Tomato","Onion","Potato","Garlic","Ginger","Spinach",
@@ -35,7 +35,7 @@ export const ingredientCategories = {
   ],
 };
 
-// ✅ Dietary filter list
+// Dietary filter list
 export const dietOptions = [
   "Vegetarian","Vegan","Gluten-Free",
   "Dairy-Free","Keto","Halal"

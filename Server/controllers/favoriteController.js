@@ -1,7 +1,7 @@
 import User from "../models/User.js";
 import Recipe from "../models/Recipe.js";
 
-// ✅ ADD TO FAVORITES
+//  ADD TO FAVORITES
 export const addFavorite = async (req, res) => {
   try {
     const { recipeId } = req.params;
@@ -31,7 +31,7 @@ export const addFavorite = async (req, res) => {
   }
 };
 
-// ✅ REMOVE FROM FAVORITES
+//  REMOVE FROM FAVORITES
 export const removeFavorite = async (req, res) => {
   try {
     const { recipeId } = req.params;
@@ -63,16 +63,16 @@ export const removeFavorite = async (req, res) => {
   }
 };
 
-// ✅ GET USER FAVORITES (FULL RECIPE DETAILS)
+//  GET USER FAVORITES — RETURN FULL RECIPES
 export const getFavorites = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
-      .populate("favorites") // pulls full recipe data
+      .populate("favorites") // Returns recipe objects
       .select("favorites");
 
     res.status(200).json({
       success: true,
-      favorites: user.favorites || [],
+      recipes: user.favorites || [], //  frontend-friendly key
     });
 
   } catch (error) {

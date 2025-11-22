@@ -47,7 +47,7 @@ const GenerateRecipe = () => {
   const fileInputRef = useRef();
   const navigate = useNavigate();
 
-  // ✅ Redirect if user NOT logged in
+  // Redirect if user NOT logged in
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) navigate("/");
@@ -76,7 +76,7 @@ const GenerateRecipe = () => {
     setSelectedImage(URL.createObjectURL(file));
   };
 
-  // ✅ Detect Ingredients (Backend call)
+  //  Detect Ingredients (Backend call)
   const detectIngredients = async () => {
     const file = fileInputRef.current?.files?.[0];
     if (!file) return;
@@ -102,14 +102,14 @@ const GenerateRecipe = () => {
     setImageLoading(false);
   };
 
-  // ✅ Confirm add from modal
+  //  Confirm add from modal
   const handleAddFromList = () => {
     setIngredients((prev) => [...prev, ...selectedListIngredients]);
     setSelectedListIngredients([]);
     setOpenModal(false);
   };
 
-  // ✅ Generate Recipes — Backend Call
+  //  Generate Recipes — Backend Call
   const handleGenerate = async () => {
     if (ingredients.length === 0) return;
 
@@ -157,7 +157,7 @@ const GenerateRecipe = () => {
           Add ingredients manually, choose from a list, or upload an image.
         </Typography>
 
-        {/* ✅ Ingredient Input */}
+        {/* Ingredient Input */}
         <Box
           sx={{
             display: "flex",
@@ -192,7 +192,7 @@ const GenerateRecipe = () => {
           </Button>
         </Box>
 
-        {/* ✅ Ingredient Chips */}
+        {/* Ingredient Chips */}
         <Box
           sx={{
             display: "flex",
@@ -207,7 +207,7 @@ const GenerateRecipe = () => {
           ))}
         </Box>
 
-        {/* ✅ AI Image Upload Detector */}
+        {/* AI Image Upload Detector */}
         <Paper
           sx={{
             p: 4,
@@ -328,7 +328,7 @@ const GenerateRecipe = () => {
           )}
         </Paper>
 
-        {/* ✅ Dietary Preferences */}
+        {/* Dietary Preferences */}
         <Typography variant="h6" fontWeight={700} mt={3} mb={1}>
           Dietary Preference
         </Typography>
@@ -359,7 +359,7 @@ const GenerateRecipe = () => {
           ))}
         </ToggleButtonGroup>
 
-        {/* ✅ Generate Recipes */}
+        {/*  Generate Recipes */}
         <Button
           variant="contained"
           sx={{ px: 5, py: 1.4, fontSize: "1.1rem", borderRadius: "14px" }}
@@ -402,7 +402,7 @@ const GenerateRecipe = () => {
         )}
       </Container>
 
-      {/* ✅ Ingredient Selection Modal */}
+      {/*  Ingredient Selection Modal */}
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Paper
           sx={{

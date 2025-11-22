@@ -1,97 +1,51 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Container,
-  Typography,
-  CircularProgress,
-} from "@mui/material";
-
+import { Box, Typography, Container, CircularProgress } from "@mui/material";
 import Navbar from "../Components/navbar";
+import api from "../api/axiosInstance";
 import RecipeCard from "../Components/recipeCard";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-const Favorites = () => {
-  const [favoriteRecipes, setFavoriteRecipes] = useState([]);
+const FavouritePage = () => {
+  const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // 🔥 Fetch user's favorite recipes from backend
+  const fetchFavorites = async () => {
+    try {
+      const res = await api.get("/api/favorites");
+
+      console.log("Favorite response:", res.data);
+      setFavorites(res.data.recipes || []);
+    } catch (err) {
+      console.error("Failed to fetch favorites:", err);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchFavorites = async () => {
-      try {
-        const res = await axios.get(
-          "http://localhost:5000/api/recipes/favorites"
-        );
-        setFavoriteRecipes(res.data.favorites || []);
-      } catch (err) {
-        console.error(err);
-      }
-      setLoading(false);
-    };
-
-    fetchFavorites();
+    const token = localStorage.getItem("token");
+    if (!token) navigate("/");
+    else fetchFavorites();
   }, []);
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #E3F2FD, #E8EAF6)",
-      }}
-    >
+    <Box sx={{ minHeight: "100vh", background: "linear-gradient(135deg,#E3F2FD,#E8EAF6)" }}>
       <Navbar />
 
-      <Container sx={{ mt: 8 }}>
-        {/* TITLE */}
-        <Typography
-          variant="h4"
-          fontWeight={800}
-          sx={{
-            background: "linear-gradient(45deg,#1e88e5,#6a1b9a)",
-            WebkitBackgroundClip: "text",
-            color: "transparent",
-            mb: 4,
-            textAlign: "center",
-          }}
-        >
-          Your Favorite Recipes
+      <Container sx={{ mt: 10 }}>
+        <Typography variant="h4" fontWeight={700} color="primary" mb={3}>
+          Your Favorites ❤️
         </Typography>
 
-        {/* LOADING */}
         {loading && (
-          <Box textAlign="center" mt={4}>
-            <CircularProgress size={40} />
+          <Box textAlign="center" mt={5}>
+            <CircularProgress size={45} />
           </Box>
         )}
 
-        {/* EMPTY STATE */}
-        {!loading && favoriteRecipes.length === 0 && (
+        {!loading && favorites.length > 0 && (
           <Box
             sx={{
-              textAlign: "center",
-              mt: 6,
-              color: "text.secondary",
-            }}
-          >
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/7079/7079383.png"
-              alt="empty"
-              width="160"
-              style={{ opacity: 0.8 }}
-            />
-            <Typography variant="h6" mt={2} fontWeight={600}>
-              No favorite recipes yet
-            </Typography>
-            <Typography>
-              Explore recipes and mark the ones you love ❤️
-            </Typography>
-          </Box>
-        )}
-
-        {/* FAVORITES GRID */}
-        {!loading && favoriteRecipes.length > 0 && (
-          <Box
-            sx={{
-              mt: 4,
               display: "grid",
               gridTemplateColumns: {
                 xs: "1fr",
@@ -101,14 +55,24 @@ const Favorites = () => {
               gap: 4,
             }}
           >
-            {favoriteRecipes.map((recipe) => (
-              <RecipeCard key={recipe._id} recipe={recipe} />
+            {favorites.map((recipe) => (
+              <RecipeCard
+                key={recipe._id}
+                recipe={recipe}
+                onClick={() => navigate(`/recipe/${recipe._id}`)}
+              />
             ))}
           </Box>
+        )}
+
+        {!loading && favorites.length === 0 && (
+          <Typography variant="h6" color="text.secondary" mt={3}>
+            You haven’t added any favorites yet — explore and save recipes ✨
+          </Typography>
         )}
       </Container>
     </Box>
   );
 };
 
-export default Favorites;
+export default FavouritePage;

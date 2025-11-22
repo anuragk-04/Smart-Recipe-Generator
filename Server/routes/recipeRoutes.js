@@ -10,7 +10,7 @@ import {
   getHomeRecipes,
 } from "../controllers/recipeController.js";
 
-import {auth} from "../middleware/authMiddleware.js";
+import { auth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -26,15 +26,16 @@ router.get("/recommended", auth, getRecommendedRecipes);
 // Find recipe by ingredients & diet
 router.post("/find", auth, findRecipes);
 
-// Get single recipe details
-router.get("/:id", auth, getSingleRecipe);
+//  Toggle Favorite — PUT/PATCH recommended
+router.patch("/:id/favorite", auth, toggleFavorite);
 
-// Favorite / Unfavorite recipe
-router.post("/favorite/:id", auth, toggleFavorite);
+//  Rate recipe — PUT/PATCH recommended
+router.patch("/:id/rate", auth, rateRecipe);
 
-// Rate a recipe
-router.post("/rate/:id", auth, rateRecipe);
-
+//  Home listing sorted
 router.get("/home", auth, getHomeRecipes);
+
+//  MUST COME LAST — otherwise it blocks others
+router.get("/:id", auth, getSingleRecipe);
 
 export default router;

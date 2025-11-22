@@ -24,9 +24,9 @@ const Navbar = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    localStorage.removeItem("favorites"); // if stored
+    localStorage.removeItem("favorites");
 
-    navigate("/"); // redirect to login
+    navigate("/");
   };
 
   return (

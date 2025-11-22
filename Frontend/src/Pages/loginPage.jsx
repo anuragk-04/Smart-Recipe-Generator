@@ -40,10 +40,12 @@ const Login = () => {
         { email, password }
       );
 
-      // Save token for authenticated requests
+      //  Save auth data
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("userId", res.data.user._id);
+      localStorage.setItem("userName", res.data.user.name);
 
-      // Redirect user to homepage
+      //  redirect
       navigate("/home");
     } catch (err) {
       console.error(err);

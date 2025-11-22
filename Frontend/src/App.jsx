@@ -4,6 +4,7 @@ import Signup from "./Pages/signupPage";
 import Home from "./Pages/homePage";
 import GenerateRecipe from "./Pages/generateRecipePage";
 import Favorites from "./Pages/favouritePage";
+import RecipeDetails from "./Pages/RecipeDetails";
 
 function App() {
   return (
@@ -14,6 +15,8 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/generateRecipe" element={<GenerateRecipe />} />
         <Route path="/favourite" element={<Favorites />} />
+        <Route path="/recipe/:id" element={<RecipeDetails />} />
+
       </Routes>
     </BrowserRouter>
   );
