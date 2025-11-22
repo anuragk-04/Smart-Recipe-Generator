@@ -7,6 +7,7 @@ import {
   Paper,
   InputAdornment,
   IconButton,
+  Alert,
 } from "@mui/material";
 
 import EmailIcon from "@mui/icons-material/Email";
@@ -14,11 +15,45 @@ import LockOpenIcon from "@mui/icons-material/LockOpen";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
   const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setLoading(true);
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
+        { email, password }
+      );
+
+      // Save token for authenticated requests
+      localStorage.setItem("token", res.data.token);
+
+      // Redirect user to homepage
+      navigate("/home");
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(
+        err.response?.data?.message || "Login failed. Try again!"
+      );
+    }
+
+    setLoading(false);
+  };
 
   return (
     <Box
@@ -28,8 +63,7 @@ const Login = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background:
-          "linear-gradient(135deg, #E3F2FD 0%, #EDE7F6 100%)",
+        background: "linear-gradient(135deg, #E3F2FD 0%, #EDE7F6 100%)",
         p: 2,
       }}
     >
@@ -68,13 +102,27 @@ const Login = () => {
           Login to continue exploring smart recipes
         </Typography>
 
-        <Box component="form" display="flex" flexDirection="column" gap={3}>
+        {errorMsg && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: "12px" }}>
+            {errorMsg}
+          </Alert>
+        )}
+
+        <Box
+          component="form"
+          display="flex"
+          flexDirection="column"
+          gap={3}
+          onSubmit={handleLogin}
+        >
           {/* Email */}
           <TextField
             label="Email"
             type="email"
             variant="outlined"
             fullWidth
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "14px",
@@ -95,6 +143,8 @@ const Login = () => {
             type={showPassword ? "text" : "password"}
             variant="outlined"
             fullWidth
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "14px",
@@ -117,8 +167,10 @@ const Login = () => {
           />
 
           <Button
+            type="submit"
             variant="contained"
             size="large"
+            disabled={loading}
             sx={{
               mt: 2,
               py: 1.4,
@@ -131,7 +183,7 @@ const Login = () => {
               },
             }}
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </Button>
         </Box>
 

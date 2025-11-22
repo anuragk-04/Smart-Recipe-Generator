@@ -1,30 +1,54 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
-  Paper,
   Container,
   Button,
+  CircularProgress,
 } from "@mui/material";
 
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../Components/navbar";
+import api from "../api/axiosInstance";
+import RecipeCard from "../Components/recipeCard";
 
-const HomePage = ({ recommendedRecipes = [] }) => {
+const HomePage = () => {
   const navigate = useNavigate();
+  const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // ✅ Redirect if user isn’t logged in
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) navigate("/");
+  }, [navigate]);
+
+  // ✅ Fetch all recipes sorted: favorites → rating → newest
+  useEffect(() => {
+    const fetchHomeRecipes = async () => {
+      try {
+        const res = await api.get("/api/recipes/recommended");
+        console.log(res);
+        setRecipes(res.data.recipes || []);
+      } catch (err) {
+        console.error("Failed to fetch home recipes:", err);
+      }
+      setLoading(false);
+    };
+
+    fetchHomeRecipes();
+  }, []);
 
   return (
     <Box
       sx={{
         minHeight: "100vh",
         width: "100%",
-        overflowX: "hidden",
         background: "linear-gradient(135deg, #E3F2FD, #E8EAF6)",
         pb: 10,
       }}
     >
-      {/* NAVBAR */}
       <Navbar />
 
       {/* HERO SECTION */}
@@ -39,7 +63,7 @@ const HomePage = ({ recommendedRecipes = [] }) => {
             mb: 2,
           }}
         >
-          Discover Recipes Tailored to You
+          Welcome to SmartRecipe 🍽️
         </Typography>
 
         <Typography
@@ -52,36 +76,42 @@ const HomePage = ({ recommendedRecipes = [] }) => {
             mb: 4,
           }}
         >
-          Personalized recipe suggestions based on your liked recipes,
-          ingredients, and preferences — powered by smart matching.
+          Explore every recipe — starting with your favorites, top-rated dishes,
+          and exciting new finds 🎯
         </Typography>
 
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 3 }}>
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<CameraAltIcon />}
-            sx={{
-              px: 4,
-              py: 1.6,
-              borderRadius: "14px",
-              textTransform: "none",
-              fontSize: "1.1rem",
-            }}
-            onClick={() => navigate("/generateRecipe")}
-          >
-            Generate Recipe
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          size="large"
+          startIcon={<CameraAltIcon />}
+          sx={{
+            px: 4,
+            py: 1.6,
+            borderRadius: "14px",
+            textTransform: "none",
+            fontSize: "1.1rem",
+          }}
+          onClick={() => navigate("/generateRecipe")}
+        >
+          Generate Recipe
+        </Button>
       </Container>
 
-      {/* SECTION HEADER */}
+      {/* ALL RECIPES SECTION */}
       <Container sx={{ mt: 10 }}>
         <Typography variant="h4" fontWeight={700} color="primary" mb={3}>
-          Your Personalized Picks
+          All Recipes — Personalized Order 🍳
         </Typography>
 
-        {recommendedRecipes.length > 0 ? (
+        {/* Loading Spinner */}
+        {loading && (
+          <Box textAlign="center" mt={5}>
+            <CircularProgress size={45} />
+          </Box>
+        )}
+
+        {/* Recipes Grid */}
+        {!loading && recipes.length > 0 && (
           <Box
             sx={{
               display: "grid",
@@ -92,49 +122,22 @@ const HomePage = ({ recommendedRecipes = [] }) => {
               },
               gap: 4,
               maxWidth: "100%",
-              overflowX: "hidden",
             }}
           >
-            {recommendedRecipes.map((recipe) => (
-              <Paper
-                key={recipe.id}
-                elevation={4}
-                sx={{
-                  p: 2,
-                  borderRadius: "20px",
-                  cursor: "pointer",
-                  transition: "transform 0.25s ease",
-                  transform: "translateZ(0)",
-                  "&:hover": {
-                    transform: "scale(1.02)",
-                  },
-                }}
-                onClick={() => navigate(`/recipe/${recipe.id}`)}
-              >
-                <img
-                  src={recipe.image}
-                  alt={recipe.name}
-                  style={{
-                    width: "100%",
-                    height: "200px",
-                    objectFit: "cover",
-                    borderRadius: "18px",
-                  }}
-                />
-
-                <Typography variant="h6" fontWeight={700} mt={2}>
-                  {recipe.name}
-                </Typography>
-
-                <Typography variant="body2" color="text.secondary">
-                  {recipe.cookingTime} mins • {recipe.difficulty}
-                </Typography>
-              </Paper>
+            {recipes.map((recipe) => (
+              <RecipeCard
+                key={recipe._id}
+                recipe={recipe}
+                onClick={() => navigate(`/recipe/${recipe._id}`)}
+              />
             ))}
           </Box>
-        ) : (
+        )}
+
+        {/* Empty state */}
+        {!loading && recipes.length === 0 && (
           <Typography variant="h6" color="text.secondary" mt={3}>
-            Add recipes to your favorites to get personalized recommendations!
+            No recipes available yet — be the first to create one!
           </Typography>
         )}
       </Container>

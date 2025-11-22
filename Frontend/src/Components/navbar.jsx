@@ -21,6 +21,14 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("favorites"); // if stored
+
+    navigate("/"); // redirect to login
+  };
+
   return (
     <>
       {/* MAIN NAVBAR */}
@@ -57,7 +65,7 @@ const Navbar = () => {
         {/* DESKTOP MENU */}
         <Box
           sx={{
-            display: { xs: "none", md: "flex" }, // hide on mobile
+            display: { xs: "none", md: "flex" },
             gap: 3,
             alignItems: "center",
           }}
@@ -80,7 +88,7 @@ const Navbar = () => {
 
           <Button
             startIcon={<LogoutIcon />}
-            onClick={() => navigate("/")}
+            onClick={handleLogout}   // ✅ Logout function
             sx={{ textTransform: "none", fontSize: "1rem" }}
           >
             Logout
@@ -122,22 +130,22 @@ const Navbar = () => {
 
           <List>
             <ListItem disablePadding>
-              <ListItemButton onClick={() => navigate("/generate")}>
+              <ListItemButton onClick={() => navigate("/generateRecipe")}>
                 <SparklesIcon sx={{ mr: 1 }} />
                 <ListItemText primary="Generate Recipe" />
               </ListItemButton>
             </ListItem>
 
             <ListItem disablePadding>
-              <ListItemButton onClick={() => navigate("/favorites")}>
+              <ListItemButton onClick={() => navigate("/favourite")}>
                 <FavoriteIcon sx={{ mr: 1 }} />
                 <ListItemText primary="Favorites" />
               </ListItemButton>
             </ListItem>
 
             <ListItem disablePadding>
-              <ListItemButton onClick={() => navigate("/")}>
-                <LogoutIcon sx={{ mr: 13 }} />
+              <ListItemButton onClick={handleLogout}>
+                <LogoutIcon sx={{ mr: 1 }} />
                 <ListItemText primary="Logout" />
               </ListItemButton>
             </ListItem>

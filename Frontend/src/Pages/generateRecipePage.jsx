@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Container,
@@ -21,53 +21,10 @@ import ImageIcon from "@mui/icons-material/Image";
 import AddIcon from "@mui/icons-material/Add";
 import Navbar from "../Components/navbar";
 import RecipeCard from "../Components/recipeCard";
+import { useNavigate } from "react-router-dom";
 
-
-// ===========================================
-// OPTION B — PROFESSIONAL INGREDIENT DATASET
-// ===========================================
-const ingredientCategories = {
-  Vegetables: [
-    "Tomato","Onion","Potato","Garlic","Ginger","Spinach",
-    "Carrot","Capsicum","Broccoli","Cauliflower",
-    "Lettuce","Cabbage","Peas","Green Beans","Beetroot",
-  ],
-
-  Fruits: [
-    "Banana","Apple","Mango","Orange","Pineapple",
-    "Grapes","Strawberry","Watermelon","Avocado",
-  ],
-
-  Spices: [
-    "Salt","Pepper","Turmeric","Cumin","Coriander",
-    "Chili Powder","Garam Masala","Oregano",
-    "Basil","Rosemary","Thyme","Paprika",
-  ],
-
-  Dairy: ["Milk","Cheese","Butter","Yogurt","Cream"],
-
-  Protein: [
-    "Egg","Paneer","Tofu","Lentils","Chickpeas",
-    "Kidney Beans","Black Beans"
-  ],
-
-  Grains: [
-    "Rice","Wheat Flour","Oats","Pasta",
-    "Bread","Noodles","Quinoa"
-  ],
-
-  Sauces: [
-    "Olive Oil","Vegetable Oil","Soy Sauce",
-    "Vinegar","Tomato Ketchup","Mayonnaise"
-  ],
-};
-
-const dietOptions = [
-  "Vegetarian","Vegan","Gluten-Free",
-  "Dairy-Free","Keto","Halal"
-];
-
-
+// ✅ Import ingredient constants
+import { ingredientCategories, dietOptions } from "../constants/ingredients";
 
 const GenerateRecipe = () => {
   const [ingredientInput, setIngredientInput] = useState("");
@@ -78,60 +35,60 @@ const GenerateRecipe = () => {
   const [loading, setLoading] = useState(false);
   const [recipes, setRecipes] = useState([]);
 
-  // Image Upload States
+  // Image Upload + Detection
   const [selectedImage, setSelectedImage] = useState(null);
   const [detectedIngredients, setDetectedIngredients] = useState([]);
   const [imageLoading, setImageLoading] = useState(false);
 
-  // Add-from-list modal
+  // Add-From-List Modal
   const [openModal, setOpenModal] = useState(false);
   const [selectedListIngredients, setSelectedListIngredients] = useState([]);
 
   const fileInputRef = useRef();
+  const navigate = useNavigate();
 
+  // ✅ Redirect if user NOT logged in
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) navigate("/");
+  }, [navigate]);
 
-
-  // Add manual ingredient
+  // Add Manual Ingredient
   const handleAddIngredient = () => {
     if (!ingredientInput.trim()) return;
     setIngredients((prev) => [...prev, ingredientInput.trim()]);
     setIngredientInput("");
   };
 
-  const handleRemoveIngredient = (i) => {
-    setIngredients((prev) => prev.filter((_, idx) => idx !== i));
+  // Remove Ingredient Chip
+  const handleRemoveIngredient = (index) => {
+    setIngredients((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDietChange = (_, value) => {
     setDietPreference(value);
   };
 
-
-  // Handle Image Upload + AI Detection
-  const handleImageUpload = async (event) => {
-    const file = event?.target?.files?.[0];
-    if (!file && selectedImage) {
-      // If clicking Detect Ingredients button
-      detectIngredients();
-      return;
-    }
+  // Handle Image Upload
+  const handleImageUpload = (event) => {
+    const file = event.target.files?.[0];
     if (!file) return;
-
     setSelectedImage(URL.createObjectURL(file));
   };
 
-
+  // ✅ Detect Ingredients (Backend call)
   const detectIngredients = async () => {
-    if (!selectedImage) return;
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) return;
 
     setImageLoading(true);
 
     try {
       const formData = new FormData();
-      formData.append("image", fileInputRef.current.files[0]);
+      formData.append("image", file);
 
       const res = await axios.post(
-        "http://localhost:5000/api/detect-ingredients",
+        `${import.meta.env.VITE_BACKEND_URL}/api/detect-ingredients`,
         formData
       );
 
@@ -145,17 +102,14 @@ const GenerateRecipe = () => {
     setImageLoading(false);
   };
 
-
-
-  // Add-from-list modal confirm
+  // ✅ Confirm add from modal
   const handleAddFromList = () => {
     setIngredients((prev) => [...prev, ...selectedListIngredients]);
     setSelectedListIngredients([]);
     setOpenModal(false);
   };
 
-
-  // Main generate function
+  // ✅ Generate Recipes — Backend Call
   const handleGenerate = async () => {
     if (ingredients.length === 0) return;
 
@@ -164,21 +118,17 @@ const GenerateRecipe = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/recipes/find",
+        `${import.meta.env.VITE_BACKEND_URL}/api/recipes/find`,
         { ingredients, dietPreference }
       );
 
       setRecipes(res.data.recipes || []);
-
     } catch (err) {
       console.error(err);
     }
 
     setLoading(false);
   };
-
-
-
 
   return (
     <Box
@@ -190,8 +140,6 @@ const GenerateRecipe = () => {
       <Navbar />
 
       <Container sx={{ mt: 8, textAlign: "center" }}>
-        
-        {/* Title */}
         <Typography
           variant="h4"
           fontWeight={800}
@@ -209,10 +157,7 @@ const GenerateRecipe = () => {
           Add ingredients manually, choose from a list, or upload an image.
         </Typography>
 
-
-
-
-        {/* ---------------- INGREDIENT INPUT SECTION ---------------- */}
+        {/* ✅ Ingredient Input */}
         <Box
           sx={{
             display: "flex",
@@ -233,12 +178,7 @@ const GenerateRecipe = () => {
               },
             }}
           />
-
-          <Button
-            variant="contained"
-            onClick={handleAddIngredient}
-            sx={{ borderRadius: "14px" }}
-          >
+          <Button variant="contained" sx={{ borderRadius: "14px" }} onClick={handleAddIngredient}>
             Add
           </Button>
 
@@ -252,10 +192,7 @@ const GenerateRecipe = () => {
           </Button>
         </Box>
 
-
-
-
-        {/* INGREDIENT CHIPS */}
+        {/* ✅ Ingredient Chips */}
         <Box
           sx={{
             display: "flex",
@@ -265,20 +202,12 @@ const GenerateRecipe = () => {
             mb: 4,
           }}
         >
-          {ingredients.map((ing, i) => (
-            <Chip
-              key={i}
-              label={ing}
-              color="primary"
-              onDelete={() => handleRemoveIngredient(i)}
-            />
+          {ingredients.map((ing, index) => (
+            <Chip key={index} label={ing} color="primary" onDelete={() => handleRemoveIngredient(index)} />
           ))}
         </Box>
 
-
-
-
-        {/* ---------------- PREMIUM IMAGE UPLOAD (AI STYLE) ---------------- */}
+        {/* ✅ AI Image Upload Detector */}
         <Paper
           sx={{
             p: 4,
@@ -289,8 +218,6 @@ const GenerateRecipe = () => {
             background: "rgba(255,255,255,0.65)",
             backdropFilter: "blur(18px)",
             boxShadow: "0px 8px 40px rgba(0,0,0,0.08)",
-            transition: "0.3s ease",
-            "&:hover": { boxShadow: "0px 12px 50px rgba(0,0,0,0.12)" },
           }}
         >
           <Typography
@@ -308,7 +235,7 @@ const GenerateRecipe = () => {
             AI Ingredient Detector
           </Typography>
 
-          {/* Upload Box */}
+          {/* Upload Area */}
           <Box
             onClick={() => fileInputRef.current.click()}
             sx={{
@@ -319,12 +246,6 @@ const GenerateRecipe = () => {
                 "linear-gradient(135deg, rgba(255,255,255,0.85), rgba(240,240,255,0.6))",
               textAlign: "center",
               cursor: "pointer",
-              transition: "0.3s ease",
-              "&:hover": {
-                borderColor: "#1e88e5",
-                background:
-                  "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(240,240,255,0.75))",
-              },
             }}
           >
             <ImageIcon sx={{ fontSize: 70, color: "#1e88e5" }} />
@@ -335,74 +256,58 @@ const GenerateRecipe = () => {
               Supported formats: JPG, PNG
             </Typography>
 
-            <input
-              type="file"
-              hidden
-              ref={fileInputRef}
-              onChange={handleImageUpload}
-            />
+            <input type="file" hidden ref={fileInputRef} onChange={handleImageUpload} />
           </Box>
 
-
-
-          {/* IMAGE PREVIEW */}
+          {/* Image Preview */}
           {selectedImage && (
-            <Box
-              sx={{
-                mt: 3,
-                borderRadius: "18px",
-                overflow: "hidden",
-                boxShadow: "0px 6px 20px rgba(0,0,0,0.15)",
-                animation: "fadeIn 0.4s ease",
-              }}
-            >
-              <img
-                src={selectedImage}
-                alt="preview"
-                style={{ width: "100%", objectFit: "cover" }}
-              />
-            </Box>
+            <>
+              <Box
+                sx={{
+                  mt: 3,
+                  borderRadius: "18px",
+                  overflow: "hidden",
+                  boxShadow: "0px 6px 20px rgba(0,0,0,0.15)",
+                }}
+              >
+                <img
+                  src={selectedImage}
+                  alt="preview"
+                  style={{ width: "100%", objectFit: "cover" }}
+                />
+              </Box>
+
+              <Button
+                variant="contained"
+                fullWidth
+                sx={{
+                  mt: 3,
+                  py: 1.4,
+                  fontSize: "1rem",
+                  borderRadius: "14px",
+                  background: "linear-gradient(45deg,#1e88e5,#6a1b9a)",
+                }}
+                onClick={detectIngredients}
+              >
+                Detect Ingredients
+              </Button>
+            </>
           )}
 
-
-
-          {/* DETECT BUTTON */}
-          {selectedImage && (
-            <Button
-              variant="contained"
-              fullWidth
-              sx={{
-                mt: 3,
-                py: 1.4,
-                fontSize: "1rem",
-                borderRadius: "14px",
-                background: "linear-gradient(45deg,#1e88e5,#6a1b9a)",
-                textTransform: "none",
-              }}
-              onClick={detectIngredients}
-            >
-              Detect Ingredients
-            </Button>
-          )}
-
-
-
-          {/* LOADING */}
+          {/* AI Loader */}
           {imageLoading && (
             <Box mt={2} textAlign="center">
               <CircularProgress size={35} />
             </Box>
           )}
 
-
-
-          {/* DETECTED CHIP RESULTS */}
+          {/* AI Detected Ingredients */}
           {detectedIngredients.length > 0 && !imageLoading && (
             <Box sx={{ mt: 3 }}>
               <Typography
                 fontWeight={700}
                 mb={1}
-                sx={{ textAlign:"center", fontSize:"1.1rem" }}
+                sx={{ textAlign: "center", fontSize: "1.1rem" }}
               >
                 AI Detected Ingredients ({detectedIngredients.length})
               </Typography>
@@ -415,19 +320,15 @@ const GenerateRecipe = () => {
                   gap: 1,
                 }}
               >
-                {detectedIngredients.map((ing, i) => (
-                  <Chip key={i} label={ing} color="secondary" />
+                {detectedIngredients.map((ing, index) => (
+                  <Chip key={index} label={ing} color="secondary" />
                 ))}
               </Box>
             </Box>
           )}
-
         </Paper>
 
-
-
-
-        {/* ---------------- DIETARY PREFERENCES ---------------- */}
+        {/* ✅ Dietary Preferences */}
         <Typography variant="h6" fontWeight={700} mt={3} mb={1}>
           Dietary Preference
         </Typography>
@@ -436,19 +337,20 @@ const GenerateRecipe = () => {
           exclusive
           value={dietPreference}
           onChange={handleDietChange}
-          sx={{ flexWrap:"wrap", justifyContent:"center", gap:1.5, mb:4 }}
+          sx={{ flexWrap: "wrap", justifyContent: "center", gap: 1.5, mb: 4 }}
         >
           {dietOptions.map((opt) => (
             <ToggleButton
               key={opt}
               value={opt}
               sx={{
-                px:2.5, py:1,
-                borderRadius:"12px",
-                textTransform:"none",
+                px: 2.5,
+                py: 1,
+                borderRadius: "12px",
+                textTransform: "none",
                 "&.Mui-selected": {
-                  backgroundColor:"#1e88e5",
-                  color:"white",
+                  backgroundColor: "#1e88e5",
+                  color: "white",
                 },
               }}
             >
@@ -457,52 +359,38 @@ const GenerateRecipe = () => {
           ))}
         </ToggleButtonGroup>
 
-
-
-
-        {/* ---------------- GENERATE RECIPES ---------------- */}
+        {/* ✅ Generate Recipes */}
         <Button
           variant="contained"
-          sx={{
-            px: 5,
-            py: 1.4,
-            fontSize: "1.1rem",
-            borderRadius: "14px",
-          }}
+          sx={{ px: 5, py: 1.4, fontSize: "1.1rem", borderRadius: "14px" }}
           onClick={handleGenerate}
         >
           Find Recipes
         </Button>
 
-
-
-
-        {/* ---------------- LOADING ---------------- */}
+        {/* Loader */}
         {loading && (
           <Box mt={4}>
             <CircularProgress size={40} />
           </Box>
         )}
 
-
-
-
-        {/* ---------------- RESULTS GRID ---------------- */}
+        {/* Results */}
         {!loading && recipes.length > 0 && (
           <Box
             sx={{
               mt: 5,
               display: "grid",
               gridTemplateColumns: {
-                xs:"1fr",
-                sm:"1fr 1fr",
-                md:"1fr 1fr 1fr"
+                xs: "1fr",
+                sm: "1fr 1fr",
+                md: "1fr 1fr 1fr",
               },
               gap: 4,
             }}
           >
             {recipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
+              <RecipeCard key={recipe._id || recipe.id} recipe={recipe} />
             ))}
           </Box>
         )}
@@ -512,26 +400,20 @@ const GenerateRecipe = () => {
             No recipes yet — try adding ingredients or uploading an image.
           </Typography>
         )}
-
-
-
-
       </Container>
 
-
-
-      {/* ---------------- MODAL: INGREDIENT LIST ---------------- */}
+      {/* ✅ Ingredient Selection Modal */}
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Paper
           sx={{
             p: 4,
-            width:"90%",
+            width: "90%",
             maxWidth: 500,
-            mx:"auto",
-            mt:10,
-            borderRadius:"18px",
-            maxHeight:"80vh",
-            overflowY:"auto",
+            mx: "auto",
+            mt: 10,
+            borderRadius: "18px",
+            maxHeight: "80vh",
+            overflowY: "auto",
           }}
         >
           <Typography variant="h6" fontWeight={700} mb={2}>
@@ -540,11 +422,7 @@ const GenerateRecipe = () => {
 
           {Object.entries(ingredientCategories).map(([category, items]) => (
             <Box key={category} sx={{ mb: 2 }}>
-              <Typography
-                variant="subtitle1"
-                fontWeight={700}
-                color="primary"
-              >
+              <Typography variant="subtitle1" fontWeight={700} color="primary">
                 {category}
               </Typography>
 
@@ -573,19 +451,11 @@ const GenerateRecipe = () => {
             </Box>
           ))}
 
-          <Button
-            variant="contained"
-            fullWidth
-            sx={{ mt: 2, py: 1.2 }}
-            onClick={handleAddFromList}
-          >
+          <Button variant="contained" fullWidth sx={{ mt: 2, py: 1.2 }} onClick={handleAddFromList}>
             Add Selected
           </Button>
         </Paper>
       </Modal>
-
-
-
     </Box>
   );
 };

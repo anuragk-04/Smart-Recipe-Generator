@@ -7,6 +7,7 @@ import {
   Paper,
   InputAdornment,
   IconButton,
+  Alert,
 } from "@mui/material";
 
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -15,11 +16,46 @@ import LockOpenIcon from "@mui/icons-material/LockOpen";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
   const navigate = useNavigate();
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setLoading(true);
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`,
+        { name, email, password }
+      );
+
+      // Save token for authentication
+      localStorage.setItem("token", res.data.token);
+
+      // Redirect after successful registration
+      navigate("/home");
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(
+        err.response?.data?.message || "Signup failed. Try again!"
+      );
+    }
+
+    setLoading(false);
+  };
 
   return (
     <Box
@@ -29,8 +65,7 @@ const Signup = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background:
-          "linear-gradient(135deg, #E3F2FD 0%, #EDE7F6 100%)",
+        background: "linear-gradient(135deg, #E3F2FD 0%, #EDE7F6 100%)",
         p: 2,
       }}
     >
@@ -69,12 +104,26 @@ const Signup = () => {
           Join SmartRecipe to explore personalized meals & AI suggestions
         </Typography>
 
-        <Box component="form" display="flex" flexDirection="column" gap={3}>
+        {errorMsg && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: "12px" }}>
+            {errorMsg}
+          </Alert>
+        )}
+
+        <Box
+          component="form"
+          display="flex"
+          flexDirection="column"
+          gap={3}
+          onSubmit={handleSignup}
+        >
           {/* Full Name */}
           <TextField
             label="Full Name"
             variant="outlined"
             fullWidth
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "14px",
@@ -95,6 +144,8 @@ const Signup = () => {
             type="email"
             variant="outlined"
             fullWidth
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "14px",
@@ -115,6 +166,8 @@ const Signup = () => {
             type={showPassword ? "text" : "password"}
             variant="outlined"
             fullWidth
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "14px",
@@ -137,8 +190,10 @@ const Signup = () => {
           />
 
           <Button
+            type="submit"
             variant="contained"
             size="large"
+            disabled={loading}
             sx={{
               mt: 2,
               py: 1.4,
@@ -151,7 +206,7 @@ const Signup = () => {
               },
             }}
           >
-            Sign Up
+            {loading ? "Signing Up..." : "Sign Up"}
           </Button>
         </Box>
 
