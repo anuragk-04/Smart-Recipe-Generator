@@ -5,6 +5,7 @@ import Home from "./Pages/homePage";
 import GenerateRecipe from "./Pages/generateRecipePage";
 import Favorites from "./Pages/favouritePage";
 import RecipeDetails from "./Pages/RecipeDetails";
+import PublishRecipe from "./Pages/publishRecipe";
 
 function App() {
   return (
@@ -16,6 +17,8 @@ function App() {
         <Route path="/generateRecipe" element={<GenerateRecipe />} />
         <Route path="/favourite" element={<Favorites />} />
         <Route path="/recipe/:id" element={<RecipeDetails />} />
+        <Route path="/publish" element={<PublishRecipe />} />
+
 
       </Routes>
     </BrowserRouter>

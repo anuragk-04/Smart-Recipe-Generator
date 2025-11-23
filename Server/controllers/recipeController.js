@@ -1,5 +1,6 @@
 import Recipe from "../models/Recipe.js";
 import User from "../models/User.js";
+import cloudinary from "../config/cloudinary.js";
 
 // ------------------------------------
 // CREATE NEW RECIPE
@@ -333,5 +334,65 @@ export const generateSmartRecipes = async (req, res) => {
     res.status(200).json({ success: true, recipes: scored });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+export const publishRecipe = async (req, res) => {
+  try {
+    const {
+      name,
+      ingredients,
+      instructions,
+      cookingTime,
+      difficulty,
+      dietPreference,
+      nutrition,
+    } = req.body;
+
+    // ✅ Make sure file exists
+    if (!req.file)
+      return res.status(400).json({ message: "Image is required" });
+
+    // ✅ Upload image to Cloudinary
+    const uploadedImg = await cloudinary.uploader.upload_stream(
+      { folder: "recipe_images" },
+      (error, result) => {
+        if (error) throw error;
+        return result;
+      }
+    );
+
+    // ✅ Convert buffer into readable stream
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "recipe_images" },
+      async (error, result) => {
+        if (error) return res.status(500).json({ message: "Cloudinary Upload Error", error });
+
+        // ✅ Save recipe to database
+        const newRecipe = await Recipe.create({
+          name,
+          image: result.secure_url,
+          ingredients: JSON.parse(ingredients),
+          instructions: JSON.parse(instructions),
+          cookingTime,
+          difficulty,
+          dietPreference,
+          nutrition: nutrition ? JSON.parse(nutrition) : undefined,
+          createdBy: req.user.id,
+        });
+
+        return res.status(201).json({
+          success: true,
+          message: "Recipe published successfully",
+          recipe: newRecipe,
+        });
+      }
+    );
+
+    stream.end(req.file.buffer);
+  } catch (error) {
+    console.error("Publish Error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

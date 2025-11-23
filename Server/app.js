@@ -7,7 +7,8 @@ import aiRoutes from "./routes/aiRoutes.js";
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "15mb" })); // ✅ safer for images
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/recipes", recipeRoutes);

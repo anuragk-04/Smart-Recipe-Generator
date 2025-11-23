@@ -228,6 +228,7 @@ const GenerateRecipe = () => {
             label="Add Ingredient"
             value={ingredientInput}
             onChange={(e) => setIngredientInput(e.target.value)}
+            onKeyDown={(e)=>{if(e.key=='Enter') handleAddIngredient()}}
             sx={{
               width: { xs: "100%", sm: "350px" },
               "& .MuiOutlinedInput-root": {

@@ -26,7 +26,6 @@ const RecipeDetails = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [userRating, setUserRating] = useState(null);
 
-  //  Fetch recipe details
   const fetchRecipe = async () => {
     try {
       const res = await api.get(`/api/recipes/${id}`);
@@ -38,6 +37,7 @@ const RecipeDetails = () => {
       const ratingObj = res.data.recipe.ratings?.find(
         (r) => r.user.toString() === userId
       );
+
       setUserRating(ratingObj ? ratingObj.rating : null);
     } catch (err) {
       console.error("Failed to fetch recipe details", err);
@@ -52,7 +52,6 @@ const RecipeDetails = () => {
     else fetchRecipe();
   }, [id]);
 
-  //  Toggle Favorite
   const handleFavorite = async () => {
     try {
       await api.patch(`/api/recipes/${id}/favorite`);
@@ -62,7 +61,6 @@ const RecipeDetails = () => {
     }
   };
 
-  //  Rate Recipe
   const handleRating = async (newValue) => {
     if (newValue === userRating) return;
 
@@ -92,7 +90,12 @@ const RecipeDetails = () => {
   if (!recipe) return null;
 
   return (
-    <Box sx={{ minHeight: "100vh", background: "linear-gradient(135deg,#E3F2FD,#E8EAF6)" }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg,#E3F2FD,#E8EAF6)",
+      }}
+    >
       <Navbar />
 
       <Container sx={{ mt: 10, mb: 6 }}>
@@ -105,7 +108,6 @@ const RecipeDetails = () => {
             backdropFilter: "blur(14px)",
           }}
         >
-          {/* IMAGE */}
           <img
             src={recipe.image}
             alt={recipe.name}
@@ -113,45 +115,64 @@ const RecipeDetails = () => {
           />
 
           <Box sx={{ p: 4 }}>
-            {/* TITLE + FAVORITE BUTTON */}
-            <Box display="flex" justifyContent="space-between" alignItems="center">
+            {/* HEADER AREA */}
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              flexWrap="wrap"
+              gap={2}
+            >
               <Typography variant="h4" fontWeight={800}>
                 {recipe.name}
               </Typography>
 
-              <Button
-                onClick={handleFavorite}
-                startIcon={isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                sx={{
-                  color: isFavorite ? "red" : "#333",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  transition: "0.25s ease",
-                  "&:hover": { transform: "scale(1.05)" },
-                }}
-              >
-                {isFavorite ? "Favorited" : "Add to Favorites"}
-              </Button>
+              <Box display="flex" flexDirection="column" alignItems="flex-end">
+                {/* Favorite Button */}
+                <Button
+                  onClick={handleFavorite}
+                  startIcon={
+                    isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />
+                  }
+                  sx={{
+                    color: isFavorite ? "red" : "#333",
+                    fontWeight: 600,
+                    textTransform: "none",
+                    fontSize: "1rem",
+                    transition: "0.25s ease",
+                    "&:hover": { transform: "scale(1.05)" },
+                  }}
+                >
+                  {isFavorite ? "Favorited" : "Add to Favorites"}
+                </Button>
+
+                {/* User Rating Box */}
+                <Box display="flex" alignItems="center" gap={1} mt={1}>
+                  <Rating
+                    value={userRating || 0}
+                    onChange={(e, v) => handleRating(v)}
+                    precision={0.5}
+                  />
+                  <Typography fontWeight={600}>
+                    {userRating ? userRating.toFixed(1) : "0.0"}
+                  </Typography>
+                </Box>
+              </Box>
             </Box>
 
-            {/* RATING */}
-            <Box mt={1} display="flex" alignItems="center" gap={1}>
-              <Rating value={userRating || 0} onChange={(e, v) => handleRating(v)} />
-              <Typography color="text.secondary">
-                {recipe.averageRating
-                  ? `(${recipe.averageRating.toFixed(1)})`
-                  : "(No ratings yet)"}
-              </Typography>
-            </Box>
+            {/* Average rating - below header */}
+            <Typography mt={1} fontSize="1rem" color="text.secondary">
+              ⭐ {recipe.averageRating ? recipe.averageRating.toFixed(1) : "0.0"}{" "}
+              ({recipe.ratings?.length || 0} ratings)
+            </Typography>
 
-            {/* Cooking time + diet */}
+            {/* TIME + DIET */}
             <Typography mt={2} color="text.secondary">
               ⏳ {recipe.cookingTime} mins • 🍽️ {recipe.difficulty} • 🥗{" "}
               {recipe.dietPreference}
             </Typography>
 
-            {/*  NUTRITION SECTION */}
+            {/* NUTRITION */}
             {recipe.nutrition && (
               <>
                 <Typography variant="h6" mt={4} fontWeight={700}>

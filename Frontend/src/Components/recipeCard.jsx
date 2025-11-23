@@ -1,5 +1,5 @@
 import React from "react";
-import { Paper, Typography, Box } from "@mui/material";
+import { Paper, Typography, Box, Rating } from "@mui/material";
 
 const RecipeCard = ({ recipe, onClick }) => {
   return (
@@ -32,7 +32,20 @@ const RecipeCard = ({ recipe, onClick }) => {
         {recipe.name}
       </Typography>
 
-      <Typography variant="body2" color="text.secondary">
+      {/* ✅ Average Rating */}
+      <Box display="flex" alignItems="center" gap={0.7} mt={0.5}>
+        <Rating
+          value={recipe.averageRating || 0}
+          readOnly
+          precision={0.1}
+          size="small"
+        />
+        <Typography variant="body2" fontWeight={600}>
+          {recipe.averageRating ? recipe.averageRating.toFixed(1) : "0.0"}
+        </Typography>
+      </Box>
+
+      <Typography variant="body2" color="text.secondary" mt={0.5}>
         {recipe.cookingTime} mins • {recipe.difficulty}
       </Typography>
     </Paper>

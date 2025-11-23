@@ -9,35 +9,39 @@ import {
   getSingleRecipe,
   getHomeRecipes,
   generateSmartRecipes,
+  publishRecipe,
 } from "../controllers/recipeController.js";
 
 import { auth } from "../middleware/authMiddleware.js";
+import upload from "../middleware/upload.js";
 
 const router = express.Router();
 
-// Create recipe
+// Generate Smart AI Recipes
 router.post("/generate-smart", auth, generateSmartRecipes);
 
+// Publish Own Recipe 
+router.post("/publish", auth, upload.single("image"), publishRecipe);
 
-// Fetch all sorted recipes
+// Fetch all recipes
 router.get("/all", auth, getAllRecipes);
 
 // Personalized recommendations
 router.get("/recommended", auth, getRecommendedRecipes);
 
-// Find recipe by ingredients & diet
+// Find recipe by ingredients + diet
 router.post("/find", auth, findRecipes);
 
-//  Toggle Favorite — PUT/PATCH recommended
+// Toggle favorite
 router.patch("/:id/favorite", auth, toggleFavorite);
 
-//  Rate recipe — PUT/PATCH recommended
+// Rate recipe
 router.patch("/:id/rate", auth, rateRecipe);
 
-//  Home listing sorted
+// Home feed
 router.get("/home", auth, getHomeRecipes);
 
-//  MUST COME LAST — otherwise it blocks others
+// Get single recipe ✅ must remain last
 router.get("/:id", auth, getSingleRecipe);
 
 export default router;

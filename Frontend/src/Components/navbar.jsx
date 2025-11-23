@@ -14,6 +14,7 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import SparklesIcon from "@mui/icons-material/AutoAwesome";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+import PublishIcon from "@mui/icons-material/Upload";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useNavigate } from "react-router-dom";
 
@@ -25,7 +26,6 @@ const Navbar = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("favorites");
-
     navigate("/");
   };
 
@@ -79,6 +79,14 @@ const Navbar = () => {
           </Button>
 
           <Button
+            startIcon={<PublishIcon />}
+            onClick={() => navigate("/publish")}
+            sx={{ textTransform: "none", fontSize: "1rem" }}
+          >
+            Publish Recipe
+          </Button>
+
+          <Button
             startIcon={<FavoriteIcon />}
             onClick={() => navigate("/favourite")}
             sx={{ textTransform: "none", fontSize: "1rem" }}
@@ -88,7 +96,7 @@ const Navbar = () => {
 
           <Button
             startIcon={<LogoutIcon />}
-            onClick={handleLogout}   // ✅ Logout function
+            onClick={handleLogout}
             sx={{ textTransform: "none", fontSize: "1rem" }}
           >
             Logout
@@ -133,6 +141,13 @@ const Navbar = () => {
               <ListItemButton onClick={() => navigate("/generateRecipe")}>
                 <SparklesIcon sx={{ mr: 1 }} />
                 <ListItemText primary="Generate Recipe" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => navigate("/publish")}>
+                <PublishIcon sx={{ mr: 1 }} />
+                <ListItemText primary="Publish Recipe" />
               </ListItemButton>
             </ListItem>
 
