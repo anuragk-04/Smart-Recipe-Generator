@@ -266,3 +266,72 @@ export const getHomeRecipes = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const generateSmartRecipes = async (req, res) => {
+  try {
+    const { ingredients, dietPreference } = req.body;
+    const user = await User.findById(req.user.id)
+      .populate("favorites")
+      .populate("ratings.recipe");
+
+    const allRecipes = await Recipe.find().lean();
+
+    const favoriteIds = new Set(user.favorites.map((r) => r._id.toString()));
+
+    const ingredientWeight = {};
+    const dietWeight = {};
+
+    // ✅ Learn from favorite recipes
+    user.favorites.forEach((rec) => {
+      (rec.ingredients || []).forEach((ing) => {
+        const key = ing.toLowerCase();
+        ingredientWeight[key] = (ingredientWeight[key] || 0) + 6;
+      });
+      if (rec.dietPreference)
+        dietWeight[rec.dietPreference] = (dietWeight[rec.dietPreference] || 0) + 6;
+    });
+
+    // ✅ Learn from ratings — weighted
+    user.ratings.forEach(({ recipe, rating }) => {
+      if (!recipe) return;
+      (recipe.ingredients || []).forEach((ing) => {
+        const key = ing.toLowerCase();
+        ingredientWeight[key] = (ingredientWeight[key] || 0) + rating * 2;
+      });
+      if (recipe.dietPreference)
+        dietWeight[recipe.dietPreference] =
+          (dietWeight[recipe.dietPreference] || 0) + rating * 2;
+    });
+
+    // ✅ Score only recipes containing requested ingredients
+    const scored = allRecipes
+      .filter((recipe) =>
+        recipe.ingredients.some((ing) =>
+          ingredients.includes(ing.toLowerCase())
+        )
+      )
+      .map((recipe) => {
+        let score = 0;
+
+        if (favoriteIds.has(recipe._id.toString())) score += 80;
+
+        (recipe.ingredients || []).forEach((ing) => {
+          const key = ing.toLowerCase();
+          if (ingredientWeight[key]) score += ingredientWeight[key];
+        });
+
+        if (dietPreference && recipe.dietPreference === dietPreference) score += 10;
+
+        if (recipe.averageRating) score += recipe.averageRating * 4;
+        if (recipe.favoriteCount) score += recipe.favoriteCount * 2;
+
+        return { ...recipe, score };
+      });
+
+    scored.sort((a, b) => b.score - a.score);
+
+    res.status(200).json({ success: true, recipes: scored });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

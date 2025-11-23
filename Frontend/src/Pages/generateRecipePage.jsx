@@ -47,20 +47,23 @@ const GenerateRecipe = () => {
   const fileInputRef = useRef();
   const navigate = useNavigate();
 
-  // Redirect if user NOT logged in
+  // ✅ Redirect if user NOT logged in
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) navigate("/");
   }, [navigate]);
 
-  // Add Manual Ingredient
+  // ✅ Add Manual Ingredient (lowercased + deduped)
   const handleAddIngredient = () => {
     if (!ingredientInput.trim()) return;
-    setIngredients((prev) => [...prev, ingredientInput.trim()]);
+    const formatted = ingredientInput.trim().toLowerCase();
+    setIngredients((prev) =>
+      prev.includes(formatted) ? prev : [...prev, formatted]
+    );
     setIngredientInput("");
   };
 
-  // Remove Ingredient Chip
+  // ✅ Remove Ingredient Chip
   const handleRemoveIngredient = (index) => {
     setIngredients((prev) => prev.filter((_, i) => i !== index));
   };
@@ -69,14 +72,53 @@ const GenerateRecipe = () => {
     setDietPreference(value);
   };
 
-  // Handle Image Upload
-  const handleImageUpload = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setSelectedImage(URL.createObjectURL(file));
-  };
+  // ✅ Handle Image Upload
+  const handleImageUpload = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
 
-  //  Detect Ingredients (Backend call)
+  setSelectedImage(URL.createObjectURL(file));
+  setImageLoading(true);
+
+  try {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const token = localStorage.getItem("token");
+
+    const res = await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/detect-ingredients`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const found = (res.data.ingredients || []).map((ing) =>
+      ing.toLowerCase()
+    );
+
+    setDetectedIngredients(found);
+
+    // ✅ Add detected ingredients (no duplicates)
+    setIngredients((prev) => [...new Set([...prev, ...found])]);
+
+    // ✅ Clear uploaded image & input field
+    setSelectedImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+  } catch (err) {
+    console.error("AI Ingredient Detection Failed:", err);
+  }
+
+  setImageLoading(false);
+};
+
+
+  // ✅ Detect Ingredients (Backend call)
   const detectIngredients = async () => {
     const file = fileInputRef.current?.files?.[0];
     if (!file) return;
@@ -92,9 +134,13 @@ const GenerateRecipe = () => {
         formData
       );
 
-      setDetectedIngredients(res.data.ingredients || []);
-      setIngredients((prev) => [...prev, ...res.data.ingredients]);
+      const found = (res.data.ingredients || []).map((ing) =>
+        ing.toLowerCase()
+      );
+      setDetectedIngredients(found);
 
+      // merge + dedupe
+      setIngredients((prev) => [...new Set([...prev, ...found])]);
     } catch (err) {
       console.error(err);
     }
@@ -102,14 +148,15 @@ const GenerateRecipe = () => {
     setImageLoading(false);
   };
 
-  //  Confirm add from modal
+  // ✅ Confirm add from ingredient list modal (deduped)
   const handleAddFromList = () => {
-    setIngredients((prev) => [...prev, ...selectedListIngredients]);
+    const lowercased = selectedListIngredients.map((i) => i.toLowerCase());
+    setIngredients((prev) => [...new Set([...prev, ...lowercased])]);
     setSelectedListIngredients([]);
     setOpenModal(false);
   };
 
-  //  Generate Recipes — Backend Call
+  // ✅ Generate Recipes — Smart personalized backend call
   const handleGenerate = async () => {
     if (ingredients.length === 0) return;
 
@@ -117,12 +164,22 @@ const GenerateRecipe = () => {
     setRecipes([]);
 
     try {
+      const token = localStorage.getItem("token");
+
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/recipes/find`,
-        { ingredients, dietPreference }
+        `${import.meta.env.VITE_BACKEND_URL}/api/recipes/generate-smart`,
+        { ingredients, dietPreference },
+        token
+          ? {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          : {}
       );
 
-      setRecipes(res.data.recipes || []);
+      // ✅ Only show top 4 matches
+      setRecipes((res.data.recipes || []).slice(0, 4));
     } catch (err) {
       console.error(err);
     }
@@ -178,7 +235,11 @@ const GenerateRecipe = () => {
               },
             }}
           />
-          <Button variant="contained" sx={{ borderRadius: "14px" }} onClick={handleAddIngredient}>
+          <Button
+            variant="contained"
+            sx={{ borderRadius: "14px" }}
+            onClick={handleAddIngredient}
+          >
             Add
           </Button>
 
@@ -203,130 +264,122 @@ const GenerateRecipe = () => {
           }}
         >
           {ingredients.map((ing, index) => (
-            <Chip key={index} label={ing} color="primary" onDelete={() => handleRemoveIngredient(index)} />
+            <Chip
+              key={index}
+              label={ing}
+              color="primary"
+              onDelete={() => handleRemoveIngredient(index)}
+            />
           ))}
         </Box>
 
         {/* AI Image Upload Detector */}
         <Paper
-          sx={{
-            p: 4,
-            borderRadius: "22px",
-            maxWidth: 650,
-            mx: "auto",
-            mb: 5,
-            background: "rgba(255,255,255,0.65)",
-            backdropFilter: "blur(18px)",
-            boxShadow: "0px 8px 40px rgba(0,0,0,0.08)",
-          }}
-        >
-          <Typography
-            variant="h6"
-            fontWeight={800}
-            sx={{
-              mb: 3,
-              textAlign: "center",
-              fontSize: "1.4rem",
-              background: "linear-gradient(45deg,#1e88e5,#6a1b9a)",
-              WebkitBackgroundClip: "text",
-              color: "transparent",
-            }}
-          >
-            AI Ingredient Detector
-          </Typography>
+  sx={{
+    p: 4,
+    borderRadius: "22px",
+    maxWidth: 650,
+    mx: "auto",
+    mb: 5,
+    background: "rgba(255,255,255,0.65)",
+    backdropFilter: "blur(18px)",
+    boxShadow: "0px 8px 40px rgba(0,0,0,0.08)",
+  }}
+>
+  <Typography
+    variant="h6"
+    fontWeight={800}
+    sx={{
+      mb: 3,
+      textAlign: "center",
+      fontSize: "1.4rem",
+      background: "linear-gradient(45deg,#1e88e5,#6a1b9a)",
+      WebkitBackgroundClip: "text",
+      color: "transparent",
+    }}
+  >
+    AI Ingredient Detector
+  </Typography>
 
-          {/* Upload Area */}
-          <Box
-            onClick={() => fileInputRef.current.click()}
-            sx={{
-              borderRadius: "20px",
-              p: 4,
-              border: "2px solid rgba(30,136,229,0.25)",
-              background:
-                "linear-gradient(135deg, rgba(255,255,255,0.85), rgba(240,240,255,0.6))",
-              textAlign: "center",
-              cursor: "pointer",
-            }}
-          >
-            <ImageIcon sx={{ fontSize: 70, color: "#1e88e5" }} />
-            <Typography fontSize="1rem" mt={1} fontWeight={600}>
-              Upload or Drag Image Here
-            </Typography>
-            <Typography color="text.secondary" fontSize="0.9rem">
-              Supported formats: JPG, PNG
-            </Typography>
+  {/* Upload Area */}
+  <Box
+    onClick={() => fileInputRef.current.click()}
+    sx={{
+      borderRadius: "20px",
+      p: 4,
+      border: "2px solid rgba(30,136,229,0.25)",
+      background:
+        "linear-gradient(135deg, rgba(255,255,255,0.85), rgba(240,240,255,0.6))",
+      textAlign: "center",
+      cursor: "pointer",
+    }}
+  >
+    <ImageIcon sx={{ fontSize: 70, color: "#1e88e5" }} />
+    <Typography fontSize="1rem" mt={1} fontWeight={600}>
+      Upload or Drag Image Here
+    </Typography>
+    <Typography color="text.secondary" fontSize="0.9rem">
+      Supported formats: JPG, PNG
+    </Typography>
 
-            <input type="file" hidden ref={fileInputRef} onChange={handleImageUpload} />
-          </Box>
+    <input type="file" hidden ref={fileInputRef} onChange={handleImageUpload} />
+  </Box>
 
-          {/* Image Preview */}
-          {selectedImage && (
-            <>
-              <Box
-                sx={{
-                  mt: 3,
-                  borderRadius: "18px",
-                  overflow: "hidden",
-                  boxShadow: "0px 6px 20px rgba(0,0,0,0.15)",
-                }}
-              >
-                <img
-                  src={selectedImage}
-                  alt="preview"
-                  style={{ width: "100%", objectFit: "cover" }}
-                />
-              </Box>
+  {/* Image Preview — Smaller */}
+  {selectedImage && (
+    <Box
+      sx={{
+        mt: 3,
+        borderRadius: "18px",
+        overflow: "hidden",
+        width: "100%",
+        height: 180, // smaller preview height
+        mx: "auto",
+        boxShadow: "0px 4px 16px rgba(0,0,0,0.15)",
+      }}
+    >
+      <img
+        src={selectedImage}
+        alt="preview"
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      />
+    </Box>
+  )}
 
-              <Button
-                variant="contained"
-                fullWidth
-                sx={{
-                  mt: 3,
-                  py: 1.4,
-                  fontSize: "1rem",
-                  borderRadius: "14px",
-                  background: "linear-gradient(45deg,#1e88e5,#6a1b9a)",
-                }}
-                onClick={detectIngredients}
-              >
-                Detect Ingredients
-              </Button>
-            </>
-          )}
+  {/* AI Loader */}
+  {imageLoading && (
+    <Box mt={2} textAlign="center">
+      <CircularProgress size={35} />
+    </Box>
+  )}
 
-          {/* AI Loader */}
-          {imageLoading && (
-            <Box mt={2} textAlign="center">
-              <CircularProgress size={35} />
-            </Box>
-          )}
+  {/* AI Detected Ingredients */}
+  {detectedIngredients.length > 0 && !imageLoading && (
+    <Box sx={{ mt: 3 }}>
+      <Typography
+        fontWeight={700}
+        mb={1}
+        sx={{ textAlign: "center", fontSize: "1.1rem" }}
+      >
+        AI Detected Ingredients ({detectedIngredients.length})
+      </Typography>
 
-          {/* AI Detected Ingredients */}
-          {detectedIngredients.length > 0 && !imageLoading && (
-            <Box sx={{ mt: 3 }}>
-              <Typography
-                fontWeight={700}
-                mb={1}
-                sx={{ textAlign: "center", fontSize: "1.1rem" }}
-              >
-                AI Detected Ingredients ({detectedIngredients.length})
-              </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: 1,
+        }}
+      >
+        {detectedIngredients.map((ing, index) => (
+          <Chip key={index} label={ing} color="secondary" />
+        ))}
+      </Box>
+    </Box>
+  )}
+</Paper>
 
-              <Box
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                  gap: 1,
-                }}
-              >
-                {detectedIngredients.map((ing, index) => (
-                  <Chip key={index} label={ing} color="secondary" />
-                ))}
-              </Box>
-            </Box>
-          )}
-        </Paper>
 
         {/* Dietary Preferences */}
         <Typography variant="h6" fontWeight={700} mt={3} mb={1}>
@@ -390,7 +443,13 @@ const GenerateRecipe = () => {
             }}
           >
             {recipes.map((recipe) => (
-              <RecipeCard key={recipe._id || recipe.id} recipe={recipe} />
+              <RecipeCard
+                key={recipe._id || recipe.id}
+                recipe={recipe}
+                onClick={() =>
+                  navigate(`/recipe/${recipe._id || recipe.id}`)
+                }
+              />
             ))}
           </Box>
         )}
@@ -451,7 +510,12 @@ const GenerateRecipe = () => {
             </Box>
           ))}
 
-          <Button variant="contained" fullWidth sx={{ mt: 2, py: 1.2 }} onClick={handleAddFromList}>
+          <Button
+            variant="contained"
+            fullWidth
+            sx={{ mt: 2, py: 1.2 }}
+            onClick={handleAddFromList}
+          >
             Add Selected
           </Button>
         </Paper>

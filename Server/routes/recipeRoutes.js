@@ -8,6 +8,7 @@ import {
   rateRecipe,
   getSingleRecipe,
   getHomeRecipes,
+  generateSmartRecipes,
 } from "../controllers/recipeController.js";
 
 import { auth } from "../middleware/authMiddleware.js";
@@ -15,7 +16,8 @@ import { auth } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // Create recipe
-router.post("/create", auth, createRecipe);
+router.post("/generate-smart", auth, generateSmartRecipes);
+
 
 // Fetch all sorted recipes
 router.get("/all", auth, getAllRecipes);
