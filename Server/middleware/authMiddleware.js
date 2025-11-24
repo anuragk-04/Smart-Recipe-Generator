@@ -4,6 +4,7 @@ import User from "../models/User.js";
 export const auth = async (req, res, next) => {
   try {
     let token = req.headers.authorization;
+    console.log('token',token);
 
     if (!token) {
       return res.status(401).json({ message: "Not authorized, no token" });

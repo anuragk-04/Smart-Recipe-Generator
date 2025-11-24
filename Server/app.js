@@ -3,6 +3,7 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import recipeRoutes from "./routes/recipeRoutes.js";
 import favoriteRoutes from "./routes/favoriteRoutes.js";
+import ratingRoutes from "./routes/ratingRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/recipes", recipeRoutes);
 app.use("/api/favorites", favoriteRoutes);
+app.use("/api/rate", ratingRoutes);
 app.use("/api", aiRoutes);
 
 export default app;

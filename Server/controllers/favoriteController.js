@@ -1,67 +1,42 @@
 import User from "../models/User.js";
 import Recipe from "../models/Recipe.js";
 
-//  ADD TO FAVORITES
-export const addFavorite = async (req, res) => {
+// ------------------------------------
+// ADD OR REMOVE FROM FAVORITES
+// ------------------------------------
+export const toggleFavorite = async (req, res) => {
   try {
-    const { recipeId } = req.params;
-
     const user = await User.findById(req.user.id);
-    const recipe = await Recipe.findById(recipeId);
-
+    const recipe = await Recipe.findById(req.params.recipeId);
+    console.log('user',user);
+    console.log('recipe',req.params.id);
     if (!recipe)
       return res.status(404).json({ success: false, message: "Recipe not found" });
 
-    if (!user.favorites.includes(recipeId)) {
-      user.favorites.push(recipeId);
-      await user.save();
+    const alreadyFav = user.favorites.includes(recipe._id);
 
-      recipe.favoriteCount = Math.max((recipe.favoriteCount || 0) + 1, 0);
-      await recipe.save();
+    if (alreadyFav) {
+      user.favorites.pull(recipe._id);
+      recipe.favoriteCount -= 1;
+    } else {
+      user.favorites.push(recipe._id);
+      recipe.favoriteCount += 1;
     }
+
+    await user.save();
+    await recipe.save();
 
     res.status(200).json({
       success: true,
-      message: "Added to favorites",
-      favorites: user.favorites,
+      message: alreadyFav
+        ? "Removed from favorites"
+        : "Added to favorites",
     });
-
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-//  REMOVE FROM FAVORITES
-export const removeFavorite = async (req, res) => {
-  try {
-    const { recipeId } = req.params;
-
-    const user = await User.findById(req.user.id);
-    const recipe = await Recipe.findById(recipeId);
-
-    if (!recipe)
-      return res.status(404).json({ success: false, message: "Recipe not found" });
-
-    if (user.favorites.includes(recipeId)) {
-      user.favorites = user.favorites.filter(
-        (id) => id.toString() !== recipeId
-      );
-      await user.save();
-
-      recipe.favoriteCount = Math.max((recipe.favoriteCount || 0) - 1, 0);
-      await recipe.save();
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Removed from favorites",
-      favorites: user.favorites,
-    });
-
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
 
 //  GET USER FAVORITES — RETURN FULL RECIPES
 export const getFavorites = async (req, res) => {

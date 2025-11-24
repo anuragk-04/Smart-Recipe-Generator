@@ -3,60 +3,6 @@ import User from "../models/User.js";
 import cloudinary from "../config/cloudinary.js";
 
 // ------------------------------------
-// CREATE NEW RECIPE
-// ------------------------------------
-export const createRecipe = async (req, res) => {
-  try {
-    const recipe = await Recipe.create({ ...req.body, createdBy: req.user.id });
-
-    res.status(201).json({
-      success: true,
-      message: "Recipe created successfully",
-      recipe,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ------------------------------------
-// FETCH ALL RECIPES SORTED BY POPULARITY
-// ------------------------------------
-export const getAllRecipes = async (req, res) => {
-  try {
-    const recipes = await Recipe.find()
-      .sort({ favoriteCount: -1, averageRating: -1 })
-      .lean();
-
-    res.status(200).json({ success: true, recipes });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ------------------------------------
-// FIND RECIPES BASED ON INGREDIENTS + DIET
-// ------------------------------------
-export const findRecipes = async (req, res) => {
-  try {
-    const { ingredients, dietPreference } = req.body;
-
-    const filter = {
-      ingredients: { $in: ingredients },
-    };
-
-    if (dietPreference) filter.dietPreference = dietPreference;
-
-    const recipes = await Recipe.find(filter)
-      .sort({ favoriteCount: -1, averageRating: -1 });
-
-    res.status(200).json({ success: true, recipes });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ------------------------------------
 // GET SINGLE RECIPE
 // ------------------------------------
 export const getSingleRecipe = async (req, res) => {
@@ -76,87 +22,6 @@ export const getSingleRecipe = async (req, res) => {
       recipe,
       isFavorite,
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-
-// ------------------------------------
-// ADD OR REMOVE FROM FAVORITES
-// ------------------------------------
-export const toggleFavorite = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    const recipe = await Recipe.findById(req.params.id);
-
-    if (!recipe)
-      return res.status(404).json({ success: false, message: "Recipe not found" });
-
-    const alreadyFav = user.favorites.includes(recipe._id);
-
-    if (alreadyFav) {
-      user.favorites.pull(recipe._id);
-      recipe.favoriteCount -= 1;
-    } else {
-      user.favorites.push(recipe._id);
-      recipe.favoriteCount += 1;
-    }
-
-    await user.save();
-    await recipe.save();
-
-    res.status(200).json({
-      success: true,
-      message: alreadyFav
-        ? "Removed from favorites"
-        : "Added to favorites",
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// ------------------------------------
-// RATE A RECIPE
-// ------------------------------------
-export const rateRecipe = async (req, res) => {
-  try {
-    const { rating } = req.body;
-    const userId = req.user.id;
-
-    const recipe = await Recipe.findById(req.params.id);
-    if (!recipe)
-      return res
-        .status(404)
-        .json({ success: false, message: "Recipe not found" });
-
-    //  1) Update rating inside Recipe
-    recipe.ratings = recipe.ratings.filter(
-      (r) => r.user.toString() !== userId
-    );
-    recipe.ratings.push({ user: userId, rating });
-
-    recipe.averageRating =
-      recipe.ratings.reduce((sum, r) => sum + r.rating, 0) /
-      recipe.ratings.length;
-
-    await recipe.save();
-
-    //  2) Update rating inside User
-    const user = await User.findById(userId);
-
-    // remove previous rating for this recipe (if exists)
-    user.ratings = user.ratings.filter(
-      (r) => r.recipe.toString() !== recipe._id.toString()
-    );
-    user.ratings.push({ recipe: recipe._id, rating });
-
-    await user.save();
-
-    res
-      .status(200)
-      .json({ success: true, message: "Rating updated", recipe });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -238,35 +103,8 @@ export const getRecommendedRecipes = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-// ------------------------------------
-// HOME FEED — FAVORITES → HIGH RATING → NEWEST
-// ------------------------------------
-export const getHomeRecipes = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("favorites");
 
-    const favSet = new Set(user.favorites.map((id) => id.toString()));
 
-    // Fetch all recipes sorted by rating then createdAt
-    const allRecipes = await Recipe.find()
-      .sort({ averageRating: -1, createdAt: -1 })
-      .lean();
-
-    // Reorder: favorites first
-    const sorted = [
-      ...allRecipes.filter((r) => favSet.has(r._id.toString())),
-      ...allRecipes.filter((r) => !favSet.has(r._id.toString())),
-    ];
-
-    res.status(200).json({
-      success: true,
-      recipes: sorted,
-    });
-
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
 
 export const generateSmartRecipes = async (req, res) => {
   try {
@@ -350,47 +188,34 @@ export const publishRecipe = async (req, res) => {
       nutrition,
     } = req.body;
 
-    // ✅ Make sure file exists
     if (!req.file)
       return res.status(400).json({ message: "Image is required" });
 
-    // ✅ Upload image to Cloudinary
-    const uploadedImg = await cloudinary.uploader.upload_stream(
-      { folder: "recipe_images" },
-      (error, result) => {
-        if (error) throw error;
-        return result;
-      }
+    // ✅ Upload image buffer to Cloudinary (safe + fast)
+    const uploadedImg = await cloudinary.uploader.upload(
+      `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
+      { folder: "recipe_images" }
     );
 
-    // ✅ Convert buffer into readable stream
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: "recipe_images" },
-      async (error, result) => {
-        if (error) return res.status(500).json({ message: "Cloudinary Upload Error", error });
+    // ✅ Save recipe to DB
+    const newRecipe = await Recipe.create({
+      name,
+      image: uploadedImg.secure_url,
+      ingredients: JSON.parse(ingredients),
+      instructions: JSON.parse(instructions),
+      cookingTime,
+      difficulty,
+      dietPreference,
+      nutrition: nutrition ? JSON.parse(nutrition) : undefined,
+      author: req.user.name,     // ✅ display author
+      createdBy: req.user._id,   // ✅ reference user
+    });
 
-        // ✅ Save recipe to database
-        const newRecipe = await Recipe.create({
-          name,
-          image: result.secure_url,
-          ingredients: JSON.parse(ingredients),
-          instructions: JSON.parse(instructions),
-          cookingTime,
-          difficulty,
-          dietPreference,
-          nutrition: nutrition ? JSON.parse(nutrition) : undefined,
-          createdBy: req.user.id,
-        });
-
-        return res.status(201).json({
-          success: true,
-          message: "Recipe published successfully",
-          recipe: newRecipe,
-        });
-      }
-    );
-
-    stream.end(req.file.buffer);
+    return res.status(201).json({
+      success: true,
+      message: "Recipe published successfully",
+      recipe: newRecipe,
+    });
   } catch (error) {
     console.error("Publish Error:", error);
     res.status(500).json({ success: false, message: error.message });

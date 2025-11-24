@@ -7,9 +7,9 @@ const ratingSchema = new mongoose.Schema({
 
 const nutritionSchema = new mongoose.Schema({
   calories: { type: Number, default: 0 },
-  protein: { type: Number, default: 0 }, // grams
-  carbs: { type: Number, default: 0 },   // grams
-  fat: { type: Number, default: 0 },     // grams
+  protein: { type: Number, default: 0 },
+  carbs: { type: Number, default: 0 },
+  fat: { type: Number, default: 0 }, 
 });
 
 const recipeSchema = new mongoose.Schema(
@@ -18,7 +18,6 @@ const recipeSchema = new mongoose.Schema(
     image: String,
     ingredients: { type: [String], required: true },
 
-    // Updated to accept multiple step-by-step instructions
     instructions: { type: [String], required: true },
 
     cookingTime: Number,
@@ -31,7 +30,7 @@ const recipeSchema = new mongoose.Schema(
     ratings: [ratingSchema],
     averageRating: { type: Number, default: 0 },
 
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    author: { type: String, required: true },
   },
   { timestamps: true }
 );

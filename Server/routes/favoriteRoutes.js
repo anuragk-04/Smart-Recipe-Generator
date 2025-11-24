@@ -1,15 +1,13 @@
 import express from "express";
 import {
-  addFavorite,
-  removeFavorite,
   getFavorites,
+  toggleFavorite,
 } from "../controllers/favoriteController.js";
 import { auth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/:recipeId", auth, addFavorite);
-router.delete("/:recipeId", auth, removeFavorite);
+router.post("/:recipeId",auth, toggleFavorite);
 router.get("/", auth, getFavorites);
 
 export default router;

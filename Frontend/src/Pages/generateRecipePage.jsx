@@ -119,34 +119,34 @@ const GenerateRecipe = () => {
 
 
   // ✅ Detect Ingredients (Backend call)
-  const detectIngredients = async () => {
-    const file = fileInputRef.current?.files?.[0];
-    if (!file) return;
+  // const detectIngredients = async () => {
+  //   const file = fileInputRef.current?.files?.[0];
+  //   if (!file) return;
 
-    setImageLoading(true);
+  //   setImageLoading(true);
 
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
+  //   try {
+  //     const formData = new FormData();
+  //     formData.append("image", file);
 
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/detect-ingredients`,
-        formData
-      );
+  //     const res = await axios.post(
+  //       `${import.meta.env.VITE_BACKEND_URL}/api/detect-ingredients`,
+  //       formData
+  //     );
 
-      const found = (res.data.ingredients || []).map((ing) =>
-        ing.toLowerCase()
-      );
-      setDetectedIngredients(found);
+  //     const found = (res.data.ingredients || []).map((ing) =>
+  //       ing.toLowerCase()
+  //     );
+  //     setDetectedIngredients(found);
 
-      // merge + dedupe
-      setIngredients((prev) => [...new Set([...prev, ...found])]);
-    } catch (err) {
-      console.error(err);
-    }
+  //     // merge + dedupe
+  //     setIngredients((prev) => [...new Set([...prev, ...found])]);
+  //   } catch (err) {
+  //     console.error(err);
+  //   }
 
-    setImageLoading(false);
-  };
+  //   setImageLoading(false);
+  // };
 
   // ✅ Confirm add from ingredient list modal (deduped)
   const handleAddFromList = () => {

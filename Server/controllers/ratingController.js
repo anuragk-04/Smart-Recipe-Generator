@@ -2,35 +2,36 @@ import Recipe from "../models/Recipe.js";
 
 export const rateRecipe = async (req, res) => {
   const { recipeId } = req.params;
-  const { rating } = req.body; // value 1–5
+  const { rating } = req.body;
   const userId = req.user._id;
+
+  if (rating === undefined || rating < 0.5 || rating > 5)
+    return res.status(400).json({ message: "Invalid rating value" });
 
   const recipe = await Recipe.findById(recipeId);
   if (!recipe) return res.status(404).json({ message: "Recipe not found" });
 
-  //  Check if user already rated
   const existing = recipe.ratings.find(
     (r) => r.user.toString() === userId.toString()
   );
 
   if (existing) {
-    // update previous rating
-    recipe.ratingSum = recipe.ratingSum - existing.value + rating;
-    existing.value = rating;
+    existing.rating = rating; // ✅ update correct field
   } else {
-    recipe.ratings.push({ user: userId, value: rating });
-    recipe.ratingCount += 1;
+    recipe.ratings.push({ user: userId, rating }); // ✅ match schema
   }
 
-  //  Recalculate average
-  const total = recipe.ratings.reduce((sum, r) => sum + r.value, 0);
-  recipe.averageRating = Number((total / recipe.ratingCount).toFixed(2));
+  const total = recipe.ratings.reduce((sum, r) => sum + r.rating, 0);
+  const count = recipe.ratings.length;
+
+  recipe.averageRating = count > 0 ? Number((total / count).toFixed(2)) : 0;
 
   await recipe.save();
 
   res.json({
     message: "Rating updated",
     averageRating: recipe.averageRating,
-    ratingCount: recipe.ratingCount,
+    ratingCount: count,
+    userRating: rating,
   });
 };

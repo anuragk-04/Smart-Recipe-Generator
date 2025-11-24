@@ -34,9 +34,15 @@ const RecipeDetails = () => {
       setIsFavorite(res.data.isFavorite);
 
       const userId = localStorage.getItem("userId");
-      const ratingObj = res.data.recipe.ratings?.find(
-        (r) => r.user.toString() === userId
-      );
+
+      const ratingObj = res.data.recipe.ratings?.find((r) => {
+        if (!r?.user) return false;
+
+        const userIdInRating =
+          typeof r.user === "string" ? r.user : r.user._id;
+
+        return userIdInRating?.toString() === userId;
+      });
 
       setUserRating(ratingObj ? ratingObj.rating : null);
     } catch (err) {
@@ -54,7 +60,7 @@ const RecipeDetails = () => {
 
   const handleFavorite = async () => {
     try {
-      await api.patch(`/api/recipes/${id}/favorite`);
+      await api.post(`/api/favorites/${id}`);
       setIsFavorite((prev) => !prev);
     } catch (err) {
       console.error("Failed to toggle favorite:", err);
@@ -66,7 +72,7 @@ const RecipeDetails = () => {
 
     setUserRating(newValue);
     try {
-      await api.patch(`/api/recipes/${id}/rate`, { rating: newValue });
+      await api.post(`/api/rate/${id}`, { rating: newValue });
       fetchRecipe();
     } catch (err) {
       console.error("Failed to rate recipe:", err);
@@ -123,12 +129,19 @@ const RecipeDetails = () => {
               flexWrap="wrap"
               gap={2}
             >
-              <Typography variant="h4" fontWeight={800}>
-                {recipe.name}
-              </Typography>
+              {/* Title + Author */}
+              <Box>
+                <Typography variant="h4" fontWeight={800}>
+                  {recipe.name}
+                </Typography>
 
+                <Typography fontSize="1rem" color="text.secondary" mt={0.5}>
+                  👨‍🍳 By {recipe.author || "Unknown Chef"}
+                </Typography>
+              </Box>
+
+              {/* Favorites + Rating */}
               <Box display="flex" flexDirection="column" alignItems="flex-end">
-                {/* Favorite Button */}
                 <Button
                   onClick={handleFavorite}
                   startIcon={
@@ -146,7 +159,6 @@ const RecipeDetails = () => {
                   {isFavorite ? "Favorited" : "Add to Favorites"}
                 </Button>
 
-                {/* User Rating Box */}
                 <Box display="flex" alignItems="center" gap={1} mt={1}>
                   <Rating
                     value={userRating || 0}
