@@ -5,6 +5,12 @@ const ratingSchema = new mongoose.Schema({
   rating: { type: Number, min: 1, max: 5 },
 });
 
+const ingredientItemSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  amount: { type: Number, required: true }, 
+  unit: { type: String, default: "" },
+});
+
 const nutritionSchema = new mongoose.Schema({
   calories: { type: Number, default: 0 },
   protein: { type: Number, default: 0 },
@@ -17,10 +23,20 @@ const recipeSchema = new mongoose.Schema(
     name: { type: String, required: true },
     image: String,
 
-    ingredients: { type: [String], required: true },
+    ingredients: {
+      type: [ingredientItemSchema],
+      required: true,
+    },
+
     instructions: { type: [String], required: true },
 
     cookingTime: Number,
+
+    servingSize: {
+      type: Number,
+      required: true,
+      default: 1, 
+    },
 
     difficulty: {
       type: String,

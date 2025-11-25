@@ -18,6 +18,8 @@ import axios from "axios";
 const difficulties = ["Easy", "Medium", "Hard"];
 const diets = ["Vegetarian", "Vegan", "Non-Vegetarian", "Keto", "Gluten-Free"];
 
+const units = ["g", "kg", "ml", "l", "cup", "tbsp", "tsp", "pcs"];
+
 const PublishRecipe = () => {
   const navigate = useNavigate();
 
@@ -25,7 +27,11 @@ const PublishRecipe = () => {
   const [imageFile, setImageFile] = useState(null);
   const [previewImg, setPreviewImg] = useState(null);
 
-  const [ingredientInput, setIngredientInput] = useState("");
+  // New ingredient fields
+  const [ingredientName, setIngredientName] = useState("");
+  const [ingredientAmount, setIngredientAmount] = useState("");
+  const [ingredientUnit, setIngredientUnit] = useState("g");
+
   const [ingredients, setIngredients] = useState([]);
 
   const [instructionInput, setInstructionInput] = useState("");
@@ -34,6 +40,8 @@ const PublishRecipe = () => {
   const [cookingTime, setCookingTime] = useState("");
   const [difficulty, setDifficulty] = useState("");
   const [dietPreference, setDietPreference] = useState("");
+
+  const [servingSize, setServingSize] = useState("");
 
   const [nutrition, setNutrition] = useState({
     calories: "",
@@ -49,9 +57,19 @@ const PublishRecipe = () => {
   }, []);
 
   const addIngredient = () => {
-    if (!ingredientInput.trim()) return;
-    setIngredients((prev) => [...prev, ingredientInput.trim()]);
-    setIngredientInput("");
+    if (!ingredientName.trim() || !ingredientAmount) return;
+
+    const ingredientObj = {
+      name: ingredientName.trim(),
+      amount: Number(ingredientAmount),
+      unit: ingredientUnit,
+    };
+
+    setIngredients((prev) => [...prev, ingredientObj]);
+
+    setIngredientName("");
+    setIngredientAmount("");
+    setIngredientUnit("g");
   };
 
   const addInstruction = () => {
@@ -68,8 +86,14 @@ const PublishRecipe = () => {
   };
 
   const handlePublish = async () => {
-    if (!name || !imageFile || ingredients.length === 0 || instructions.length === 0) {
-      alert("Please fill required fields");
+    if (
+      !name ||
+      !imageFile ||
+      ingredients.length === 0 ||
+      instructions.length === 0 ||
+      !servingSize
+    ) {
+      alert("Please fill all required fields");
       return;
     }
 
@@ -77,15 +101,19 @@ const PublishRecipe = () => {
 
     try {
       const token = localStorage.getItem("token");
-
       const formData = new FormData();
+
       formData.append("name", name);
       formData.append("image", imageFile);
+      formData.append("servingSize", servingSize);
+
       formData.append("ingredients", JSON.stringify(ingredients));
       formData.append("instructions", JSON.stringify(instructions));
+
       formData.append("cookingTime", cookingTime);
       formData.append("difficulty", difficulty);
       formData.append("dietPreference", dietPreference);
+
       formData.append("nutrition", JSON.stringify(nutrition));
 
       await axios.post(
@@ -143,25 +171,21 @@ const PublishRecipe = () => {
               gap: 5,
             }}
           >
+            {/* LEFT SIDE */}
             <Box>
               <TextField
                 label="Recipe Name"
                 fullWidth
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                sx={{ mb: 3, "& .MuiOutlinedInput-root": { borderRadius: "14px" } }}
+                sx={{ mb: 3 }}
               />
 
               <Button
                 variant="outlined"
                 component="label"
                 fullWidth
-                sx={{
-                  py: 1.4,
-                  borderRadius: "16px",
-                  fontWeight: 600,
-                  mb: 2,
-                }}
+                sx={{ py: 1.4, borderRadius: "16px", fontWeight: 600, mb: 2 }}
               >
                 Upload Dish Image
                 <input type="file" accept="image/*" hidden onChange={handleImageSelect} />
@@ -186,6 +210,15 @@ const PublishRecipe = () => {
               )}
 
               <TextField
+                label="Serving Size"
+                fullWidth
+                type="number"
+                value={servingSize}
+                onChange={(e) => setServingSize(e.target.value)}
+                sx={{ mb: 3 }}
+              />
+
+              <TextField
                 label="Cooking Time (mins)"
                 fullWidth
                 type="number"
@@ -203,7 +236,9 @@ const PublishRecipe = () => {
                 sx={{ mb: 3 }}
               >
                 {difficulties.map((d) => (
-                  <MenuItem key={d} value={d}>{d}</MenuItem>
+                  <MenuItem key={d} value={d}>
+                    {d}
+                  </MenuItem>
                 ))}
               </TextField>
 
@@ -215,7 +250,9 @@ const PublishRecipe = () => {
                 onChange={(e) => setDietPreference(e.target.value)}
               >
                 {diets.map((d) => (
-                  <MenuItem key={d} value={d}>{d}</MenuItem>
+                  <MenuItem key={d} value={d}>
+                    {d}
+                  </MenuItem>
                 ))}
               </TextField>
 
@@ -240,18 +277,44 @@ const PublishRecipe = () => {
               </Box>
             </Box>
 
+            {/* RIGHT SIDE */}
             <Box>
-              <Typography fontWeight={700} mb={1}>
+              {/* INGREDIENTS */}
+              <Typography fontWeight={700} mb={2}>
                 Ingredients
               </Typography>
 
               <Box display="flex" gap={2} mb={2}>
                 <TextField
+                  label="Ingredient Name"
                   fullWidth
-                  label="Add Ingredient"
-                  value={ingredientInput}
-                  onChange={(e) => setIngredientInput(e.target.value)}
+                  value={ingredientName}
+                  onChange={(e) => setIngredientName(e.target.value)}
                 />
+              </Box>
+
+              <Box display="flex" gap={2} mb={2}>
+                <TextField
+                  label="Amount"
+                  type="number"
+                  value={ingredientAmount}
+                  onChange={(e) => setIngredientAmount(e.target.value)}
+                />
+
+                <TextField
+                  select
+                  label="Unit"
+                  value={ingredientUnit}
+                  onChange={(e) => setIngredientUnit(e.target.value)}
+                  sx={{ minWidth: "110px" }}
+                >
+                  {units.map((u) => (
+                    <MenuItem key={u} value={u}>
+                      {u}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
                 <Button variant="contained" onClick={addIngredient}>
                   Add
                 </Button>
@@ -261,8 +324,10 @@ const PublishRecipe = () => {
                 {ingredients.map((ing, i) => (
                   <Chip
                     key={i}
-                    label={ing}
-                    onDelete={() => setIngredients(ingredients.filter((_, x) => x !== i))}
+                    label={`${ing.name} — ${ing.amount}${ing.unit}`}
+                    onDelete={() =>
+                      setIngredients(ingredients.filter((_, idx) => idx !== i))
+                    }
                     color="primary"
                   />
                 ))}
@@ -270,6 +335,7 @@ const PublishRecipe = () => {
 
               <Divider sx={{ my: 3 }} />
 
+              {/* INSTRUCTIONS */}
               <Typography fontWeight={700} mb={1}>
                 Instructions — Step by Step
               </Typography>

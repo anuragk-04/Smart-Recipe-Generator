@@ -8,6 +8,7 @@ import {
   Button,
   CircularProgress,
   Rating,
+  TextField,
 } from "@mui/material";
 
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -22,28 +23,35 @@ const RecipeDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [userRating, setUserRating] = useState(null);
 
+  // Serving system
+  const [currentServings, setCurrentServings] = useState(1);
+  const [baseIngredients, setBaseIngredients] = useState([]);
+  const [baseNutrition, setBaseNutrition] = useState(null);
+
   const fetchRecipe = async () => {
     try {
       const res = await api.get(`/api/recipes/${id}`);
+      const recipeData = res.data.recipe;
 
-      setRecipe(res.data.recipe);
+      setRecipe(recipeData);
       setIsFavorite(res.data.isFavorite);
 
+      // Servings + ingredients
+      setCurrentServings(recipeData.servingSize || 1);
+      setBaseIngredients(recipeData.ingredients || []);
+      setBaseNutrition(recipeData.nutrition || null);
+
+      // User rating
       const userId = localStorage.getItem("userId");
-
-      const ratingObj = res.data.recipe.ratings?.find((r) => {
+      const ratingObj = recipeData.ratings?.find((r) => {
         if (!r?.user) return false;
-
-        const userIdInRating =
-          typeof r.user === "string" ? r.user : r.user._id;
-
-        return userIdInRating?.toString() === userId;
+        const ratingUserId = typeof r.user === "string" ? r.user : r.user._id;
+        return ratingUserId?.toString() === userId;
       });
 
       setUserRating(ratingObj ? ratingObj.rating : null);
@@ -86,6 +94,34 @@ const RecipeDetails = () => {
     }
   };
 
+  // Scale Ingredient Amounts
+  const getScaledIngredients = () => {
+    if (!recipe?.servingSize || baseIngredients.length === 0)
+      return baseIngredients;
+
+    const factor = currentServings / recipe.servingSize;
+
+    return baseIngredients.map((ing) => ({
+      ...ing,
+      amount: Math.round(ing.amount * factor * 100) / 100,
+    }));
+  };
+
+  // Scale Nutrition
+  const getScaledNutrition = () => {
+    if (!recipe?.servingSize || !baseNutrition)
+      return baseNutrition;
+
+    const factor = currentServings / recipe.servingSize;
+
+    return {
+      calories: Math.round(baseNutrition.calories * factor),
+      protein: Math.round(baseNutrition.protein * factor),
+      carbs: Math.round(baseNutrition.carbs * factor),
+      fat: Math.round(baseNutrition.fat * factor),
+    };
+  };
+
   if (loading)
     return (
       <Box
@@ -101,6 +137,9 @@ const RecipeDetails = () => {
     );
 
   if (!recipe) return null;
+
+  const scaledIngredients = getScaledIngredients();
+  const scaledNutrition = getScaledNutrition();
 
   return (
     <Box
@@ -121,6 +160,7 @@ const RecipeDetails = () => {
             backdropFilter: "blur(14px)",
           }}
         >
+          {/* IMAGE */}
           <img
             src={recipe.image}
             alt={recipe.name}
@@ -129,6 +169,7 @@ const RecipeDetails = () => {
           />
 
           <Box sx={{ p: 4 }}>
+            {/* HEADER */}
             <Box
               display="flex"
               justifyContent="space-between"
@@ -140,12 +181,12 @@ const RecipeDetails = () => {
                 <Typography variant="h4" fontWeight={800}>
                   {recipe.name}
                 </Typography>
-
                 <Typography fontSize="1rem" color="text.secondary" mt={0.5}>
                   👨‍🍳 By {recipe.author || "Unknown Chef"}
                 </Typography>
               </Box>
 
+              {/* FAVORITE + RATING */}
               <Box display="flex" flexDirection="column" alignItems="flex-end">
                 <Button
                   onClick={handleFavorite}
@@ -164,7 +205,6 @@ const RecipeDetails = () => {
                   {isFavorite ? "Favorited" : "Add to Favorites"}
                 </Button>
 
-                {/* Rating input */}
                 <Box display="flex" alignItems="center" gap={1} mt={1}>
                   <Rating
                     value={userRating || 0}
@@ -178,9 +218,10 @@ const RecipeDetails = () => {
               </Box>
             </Box>
 
+            {/* META */}
             <Typography mt={1} fontSize="1rem" color="text.secondary">
-              ⭐ {recipe.averageRating ? recipe.averageRating.toFixed(1) : "0.0"}{" "}
-              ({recipe.ratings?.length || 0} ratings)
+              ⭐ {recipe.averageRating?.toFixed(1) ?? "0.0"} (
+              {recipe.ratings?.length || 0} ratings)
             </Typography>
 
             <Typography mt={2} color="text.secondary">
@@ -188,11 +229,25 @@ const RecipeDetails = () => {
               {recipe.dietPreference}
             </Typography>
 
-            {/* Nutrition section */}
-            {recipe.nutrition && (
+            {/* SERVINGS */}
+            <Box mt={3}>
+              <Typography variant="h6" fontWeight={700}>
+                Serving Size
+              </Typography>
+              <TextField
+                type="number"
+                value={currentServings}
+                onChange={(e) => setCurrentServings(Number(e.target.value))}
+                sx={{ width: 120, mt: 1 }}
+                inputProps={{ min: 1 }}
+              />
+            </Box>
+
+            {/* NUTRITION */}
+            {scaledNutrition && (
               <>
                 <Typography variant="h6" mt={4} fontWeight={700}>
-                  Nutrition (per serving)
+                  Nutrition (for {currentServings} serving(s))
                 </Typography>
 
                 <Box
@@ -203,26 +258,57 @@ const RecipeDetails = () => {
                     mt: 1,
                   }}
                 >
-                  <Chip label={`Calories: ${recipe.nutrition.calories}`} color="secondary" />
-                  <Chip label={`Protein: ${recipe.nutrition.protein}g`} color="primary" />
-                  <Chip label={`Carbs: ${recipe.nutrition.carbs}g`} color="success" />
-                  <Chip label={`Fat: ${recipe.nutrition.fat}g`} color="warning" />
+                  <Chip label={`Calories: ${scaledNutrition.calories}`} color="secondary" />
+                  <Chip label={`Protein: ${scaledNutrition.protein}g`} color="primary" />
+                  <Chip label={`Carbs: ${scaledNutrition.carbs}g`} color="success" />
+                  <Chip label={`Fat: ${scaledNutrition.fat}g`} color="warning" />
                 </Box>
               </>
             )}
 
-            {/* Ingredients list */}
+            {/* INGREDIENTS PREMIUM */}
             <Typography variant="h6" mt={4} fontWeight={700}>
               Ingredients
             </Typography>
 
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
-              {recipe.ingredients.map((ing, index) => (
-                <Chip key={index} label={ing} color="primary" />
+            <Box
+              sx={{
+                mt: 2,
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+              }}
+            >
+              {scaledIngredients.map((ing, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    p: 2,
+                    borderRadius: "14px",
+                    background: "linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)",
+                    boxShadow: "0 3px 10px rgba(0,0,0,0.08)",
+                    border: "1px solid #e0e0e0",
+                  }}
+                >
+                  <Typography
+                    sx={{ fontWeight: 600, color: "#333", fontSize: "1rem" }}
+                  >
+                    {ing.name}
+                  </Typography>
+
+                  <Typography
+                    sx={{ fontWeight: 700, color: "#6a1b9a", fontSize: "1rem" }}
+                  >
+                    {ing.amount} {ing.unit}
+                  </Typography>
+                </Box>
               ))}
             </Box>
 
-            {/* Step-by-step instructions */}
+            {/* INSTRUCTIONS */}
             <Typography variant="h6" mt={4} fontWeight={700}>
               Instructions
             </Typography>

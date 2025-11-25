@@ -395,7 +395,7 @@ const GenerateRecipe = () => {
           onChange={handleDifficultyChange}
           sx={{ flexWrap: "wrap", justifyContent: "center", gap: 1.5, mb: 4 }}
         >
-          {["low", "medium", "high"].map((level) => (
+          {["Easy", "Medium", "Hard"].map((level) => (
             <ToggleButton
               key={level}
               value={level}
