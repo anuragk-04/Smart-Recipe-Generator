@@ -1,9 +1,7 @@
 import User from "../models/User.js";
 import Recipe from "../models/Recipe.js";
 
-// ------------------------------------
 // ADD OR REMOVE FROM FAVORITES
-// ------------------------------------
 export const toggleFavorite = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -38,16 +36,16 @@ export const toggleFavorite = async (req, res) => {
 };
 
 
-//  GET USER FAVORITES — RETURN FULL RECIPES
+//  GET USER FAVORITES
 export const getFavorites = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
-      .populate("favorites") // Returns recipe objects
+      .populate("favorites")
       .select("favorites");
 
     res.status(200).json({
       success: true,
-      recipes: user.favorites || [], //  frontend-friendly key
+      recipes: user.favorites || [],
     });
 
   } catch (error) {

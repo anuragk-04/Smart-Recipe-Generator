@@ -15,7 +15,7 @@ export const detectIngredients = async (req, res) => {
     const imageBytes = fs.readFileSync(req.file.path);
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash", // ✅ verified working
+      model: "gemini-2.0-flash",
     });
 
     const prompt =
@@ -33,7 +33,6 @@ export const detectIngredients = async (req, res) => {
 
     let text = result.response.text();
 
-    // ✅ Ensure valid JSON array returned
     const ingredients = JSON.parse(text);
     console.log(ingredients)
 

@@ -136,7 +136,6 @@ const PublishRecipe = () => {
             Publish Your Own Recipe ✨
           </Typography>
 
-          {/* ✅ Two Column Layout */}
           <Box
             sx={{
               display: "grid",
@@ -144,7 +143,6 @@ const PublishRecipe = () => {
               gap: 5,
             }}
           >
-            {/* LEFT SIDE */}
             <Box>
               <TextField
                 label="Recipe Name"
@@ -154,7 +152,6 @@ const PublishRecipe = () => {
                 sx={{ mb: 3, "& .MuiOutlinedInput-root": { borderRadius: "14px" } }}
               />
 
-              {/* Upload Image */}
               <Button
                 variant="outlined"
                 component="label"
@@ -243,7 +240,6 @@ const PublishRecipe = () => {
               </Box>
             </Box>
 
-            {/* RIGHT SIDE */}
             <Box>
               <Typography fontWeight={700} mb={1}>
                 Ingredients
@@ -305,7 +301,6 @@ const PublishRecipe = () => {
                 ))}
               </Box>
 
-              {/* Publish Button */}
               <Button
                 fullWidth
                 variant="contained"

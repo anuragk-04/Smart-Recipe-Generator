@@ -46,7 +46,6 @@ const Navbar = () => {
           zIndex: 1000,
         }}
       >
-        {/* Logo */}
         <Typography
           variant="h5"
           fontWeight={800}
@@ -112,7 +111,6 @@ const Navbar = () => {
         </IconButton>
       </Box>
 
-      {/* MOBILE DRAWER */}
       <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
         <Box
           sx={{

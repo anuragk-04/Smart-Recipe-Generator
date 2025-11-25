@@ -6,12 +6,10 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 
-    // Already have this:
     favorites: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Recipe" }
     ],
 
-    // NEW: store what user rated
     ratings: [
       {
         recipe: { type: mongoose.Schema.Types.ObjectId, ref: "Recipe" },

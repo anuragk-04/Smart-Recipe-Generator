@@ -2,9 +2,7 @@ import Recipe from "../models/Recipe.js";
 import User from "../models/User.js";
 import cloudinary from "../config/cloudinary.js";
 
-// ------------------------------------
 // GET SINGLE RECIPE
-// ------------------------------------
 export const getSingleRecipe = async (req, res) => {
   try {
     const recipe = await Recipe.findById(req.params.id).lean();
@@ -27,10 +25,7 @@ export const getSingleRecipe = async (req, res) => {
   }
 };
 
-// ------------------------------------
 // PERSONALIZED RECOMMENDATIONS
-// FAVORITES → HIGH RATING → RANDOM REST
-// ------------------------------------
 export const getRecommendedRecipes = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
@@ -42,7 +37,6 @@ export const getRecommendedRecipes = async (req, res) => {
     // --- Ingredient preference weight map ---
     const ingredientWeight = {};
 
-    // --- 1. Add strong weight for Favorite Recipes ingredients ---
     user.favorites.forEach((rec) => {
       (rec.ingredients || []).forEach((ing) => {
         const key = ing.toLowerCase();
@@ -50,7 +44,7 @@ export const getRecommendedRecipes = async (req, res) => {
       });
     });
 
-    // --- 2. Add weight from recipes user rated >= 4 ---
+    // Add weight from recipes user rated >= 4 
     user.ratings.forEach(({ recipe, rating }) => {
       if (!recipe) return;
 
@@ -62,7 +56,6 @@ export const getRecommendedRecipes = async (req, res) => {
       }
     });
 
-    // --- 3. Score each recipe globally ---
     const scored = allRecipes.map((rec) => {
       let score = 0;
 
@@ -72,13 +65,11 @@ export const getRecommendedRecipes = async (req, res) => {
         if (ingredientWeight[key]) score += ingredientWeight[key];
       });
 
-      // Recipe rating weight (makes good recipes appear higher)
       score += (rec.averageRating || 0) * 2;
 
       return { ...rec, score };
     });
 
-    // --- 4. Sort (highest score first) ---
     scored.sort((a, b) => b.score - a.score);
 
     return res.status(200).json({ success: true, recipes: scored });
@@ -93,8 +84,8 @@ export const generateSmartRecipes = async (req, res) => {
   try {
     const {
       ingredients = [],
-      dietPreference = null, // string
-      difficulty = null,     // string
+      dietPreference = null, 
+      difficulty = null,   
     } = req.body;
 
     const user = await User.findById(req.user.id)
@@ -105,9 +96,6 @@ export const generateSmartRecipes = async (req, res) => {
 
     const favoriteIds = new Set(user.favorites.map((r) => r._id.toString()));
 
-    // -----------------------------------------------------
-    // 1️⃣ Build user preference weights
-    // -----------------------------------------------------
     const ingredientWeight = {};
     const dietWeight = {};
 
@@ -123,7 +111,6 @@ export const generateSmartRecipes = async (req, res) => {
           (dietWeight[rec.dietPreference] || 0) + 6;
     });
 
-    // Ratings → rating-based weights
     user.ratings.forEach(({ recipe, rating }) => {
       if (!recipe) return;
 
@@ -137,24 +124,18 @@ export const generateSmartRecipes = async (req, res) => {
           (dietWeight[recipe.dietPreference] || 0) + rating * 2;
     });
 
-    // -----------------------------------------------------
-    // 2️⃣ Apply filters: dietPreference + difficulty
-    // -----------------------------------------------------
+    // Apply filters: dietPreference + difficulty
     const applyFilters = (recipe) => {
-      // Diet filter
       if (dietPreference && recipe.dietPreference !== dietPreference)
         return false;
 
-      // Difficulty filter
       if (difficulty && recipe.difficulty !== difficulty)
         return false;
 
       return true;
     };
 
-    // -----------------------------------------------------
-    // 3️⃣ Filter by ingredients + user filters
-    // -----------------------------------------------------
+    // Filter by ingredients + user filters
     const filteredRecipes = allRecipes.filter((recipe) => {
       const hasIngredientMatch = recipe.ingredients.some((ing) =>
         ingredients.includes(ing.toLowerCase())
@@ -165,35 +146,27 @@ export const generateSmartRecipes = async (req, res) => {
       return applyFilters(recipe);
     });
 
-    // -----------------------------------------------------
-    // 4️⃣ Score recipes
-    // -----------------------------------------------------
     const scored = filteredRecipes.map((recipe) => {
       let score = 0;
 
       // Favorite recipes are pushed on top
       if (favoriteIds.has(recipe._id.toString())) score += 80;
 
-      // Ingredient similarity boost
+      // Ingredient similarity
       (recipe.ingredients || []).forEach((ing) => {
         const key = ing.toLowerCase();
         if (ingredientWeight[key]) score += ingredientWeight[key];
       });
 
-      // Diet preference match boost
+      // Diet preference match 
       if (dietPreference && recipe.dietPreference === dietPreference)
         score += 10;
 
-      // Quality signals
       if (recipe.averageRating) score += recipe.averageRating * 4;
       if (recipe.favoriteCount) score += recipe.favoriteCount * 2;
 
       return { ...recipe, score };
     });
-
-    // -----------------------------------------------------
-    // 5️⃣ Sort by score (descending)
-    // -----------------------------------------------------
     scored.sort((a, b) => b.score - a.score);
 
     return res.status(200).json({ success: true, recipes: scored });
@@ -221,13 +194,11 @@ export const publishRecipe = async (req, res) => {
     if (!req.file)
       return res.status(400).json({ message: "Image is required" });
 
-    // ✅ Upload image buffer to Cloudinary (safe + fast)
     const uploadedImg = await cloudinary.uploader.upload(
       `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
       { folder: "recipe_images" }
     );
 
-    // ✅ Save recipe to DB
     const newRecipe = await Recipe.create({
       name,
       image: uploadedImg.secure_url,
@@ -237,8 +208,8 @@ export const publishRecipe = async (req, res) => {
       difficulty,
       dietPreference,
       nutrition: nutrition ? JSON.parse(nutrition) : undefined,
-      author: req.user.name,     // ✅ display author
-      createdBy: req.user._id,   // ✅ reference user
+      author: req.user.name,     
+      createdBy: req.user._id,   
     });
 
     return res.status(201).json({

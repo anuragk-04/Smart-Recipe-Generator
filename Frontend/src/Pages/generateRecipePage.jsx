@@ -28,18 +28,16 @@ import {
   dietOptions as originalDietOptions,
 } from "../constants/ingredients";
 
-// ⭐ ADDED → Remove "halal"
 const dietOptions = originalDietOptions.filter(
   (d) => d.toLowerCase() !== "halal"
 );
 
 const GenerateRecipe = () => {
+  
   const [ingredientInput, setIngredientInput] = useState("");
   const [ingredients, setIngredients] = useState([]);
 
   const [dietPreference, setDietPreference] = useState(null);
-
-  // ⭐ ADDED — Difficulty state
   const [difficultyPreference, setDifficultyPreference] = useState(null);
 
   const [loading, setLoading] = useState(false);
@@ -55,7 +53,6 @@ const GenerateRecipe = () => {
   const fileInputRef = useRef();
   const navigate = useNavigate();
 
-  // LOGIN CHECK
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) navigate("/");
@@ -64,9 +61,11 @@ const GenerateRecipe = () => {
   const handleAddIngredient = () => {
     if (!ingredientInput.trim()) return;
     const formatted = ingredientInput.trim().toLowerCase();
+
     setIngredients((prev) =>
       prev.includes(formatted) ? prev : [...prev, formatted]
     );
+
     setIngredientInput("");
   };
 
@@ -78,12 +77,10 @@ const GenerateRecipe = () => {
     setDietPreference(value);
   };
 
-  // ⭐ ADDED — Difficulty handler
   const handleDifficultyChange = (_, value) => {
     setDifficultyPreference(value);
   };
 
-  // IMAGE UPLOAD + AI INGREDIENT DETECTION (UNCHANGED)
   const handleImageUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -108,12 +105,11 @@ const GenerateRecipe = () => {
         }
       );
 
-      const found = (res.data.ingredients || []).map((ing) =>
-        ing.toLowerCase()
+      const found = (res.data.ingredients || []).map((i) =>
+        i.toLowerCase()
       );
 
       setDetectedIngredients(found);
-
       setIngredients((prev) => [...new Set([...prev, ...found])]);
 
       setSelectedImage(null);
@@ -125,7 +121,6 @@ const GenerateRecipe = () => {
     setImageLoading(false);
   };
 
-  // Modal ingredient adding
   const handleAddFromList = () => {
     const lowercased = selectedListIngredients.map((i) => i.toLowerCase());
     setIngredients((prev) => [...new Set([...prev, ...lowercased])]);
@@ -133,7 +128,6 @@ const GenerateRecipe = () => {
     setOpenModal(false);
   };
 
-  // ⭐ UPDATED — include difficultyPreference
   const handleGenerate = async () => {
     if (ingredients.length === 0) return;
 
@@ -148,7 +142,7 @@ const GenerateRecipe = () => {
         {
           ingredients,
           dietPreference,
-          difficulty: difficultyPreference, 
+          difficulty: difficultyPreference,
         },
         token
           ? {
@@ -194,7 +188,7 @@ const GenerateRecipe = () => {
           Add ingredients manually, choose from a list, or upload an image.
         </Typography>
 
-        {/* INGREDIENT INPUT AREA — UNCHANGED */}
+        {/* ---------------- Ingredient Input ---------------- */}
         <Box
           sx={{
             display: "flex",
@@ -209,7 +203,7 @@ const GenerateRecipe = () => {
             value={ingredientInput}
             onChange={(e) => setIngredientInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key == "Enter") handleAddIngredient();
+              if (e.key === "Enter") handleAddIngredient();
             }}
             sx={{
               width: { xs: "100%", sm: "350px" },
@@ -218,6 +212,7 @@ const GenerateRecipe = () => {
               },
             }}
           />
+
           <Button
             variant="contained"
             sx={{ borderRadius: "14px" }}
@@ -236,7 +231,6 @@ const GenerateRecipe = () => {
           </Button>
         </Box>
 
-        {/* INGREDIENT CHIPS — UNCHANGED */}
         <Box
           sx={{
             display: "flex",
@@ -256,7 +250,7 @@ const GenerateRecipe = () => {
           ))}
         </Box>
 
-        {/* AI DETECTOR SECTION — FULLY RESTORED */}
+        {/* ---------------- AI Ingredient Detector ---------------- */}
         <Paper
           sx={{
             p: 4,
@@ -359,7 +353,7 @@ const GenerateRecipe = () => {
           )}
         </Paper>
 
-        {/* DIET PREFERENCE (Halal Removed) */}
+        {/* ---------------- Diet Filter ---------------- */}
         <Typography variant="h6" fontWeight={700} mt={3} mb={1}>
           Dietary Preference
         </Typography>
@@ -390,7 +384,7 @@ const GenerateRecipe = () => {
           ))}
         </ToggleButtonGroup>
 
-        {/* ⭐ NEW — DIFFICULTY FILTER */}
+        {/* ---------------- Difficulty Filter ---------------- */}
         <Typography variant="h6" fontWeight={700} mt={3} mb={1}>
           Difficulty Level
         </Typography>
@@ -421,26 +415,23 @@ const GenerateRecipe = () => {
           ))}
         </ToggleButtonGroup>
 
-        {/* GENERATE */}
         <Box sx={{ width: "100%", textAlign: "center", mt: 2 }}>
-  <Button
-    variant="contained"
-    sx={{ px: 5, py: 1.4, fontSize: "1.1rem", borderRadius: "14px" }}
-    onClick={handleGenerate}
-  >
-    Find Recipes
-  </Button>
-</Box>
+          <Button
+            variant="contained"
+            sx={{ px: 5, py: 1.4, fontSize: "1.1rem", borderRadius: "14px" }}
+            onClick={handleGenerate}
+          >
+            Find Recipes
+          </Button>
+        </Box>
 
-
-        {/* LOADING */}
+        {/* Loader */}
         {loading && (
           <Box mt={4}>
             <CircularProgress size={40} />
           </Box>
         )}
 
-        {/* RESULTS */}
         {!loading && recipes.length > 0 && (
           <Box
             sx={{
@@ -466,7 +457,6 @@ const GenerateRecipe = () => {
           </Box>
         )}
 
-        {/* EMPTY */}
         {!loading && recipes.length === 0 && (
           <Typography mt={4} color="text.secondary">
             No recipes yet — try adding ingredients or uploading an image.
@@ -474,7 +464,7 @@ const GenerateRecipe = () => {
         )}
       </Container>
 
-      {/* MODAL (UNCHANGED) */}
+      {/* ---------------- Ingredient Selection Modal ---------------- */}
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Paper
           sx={{

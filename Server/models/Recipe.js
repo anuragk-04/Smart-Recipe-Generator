@@ -22,14 +22,12 @@ const recipeSchema = new mongoose.Schema(
 
     cookingTime: Number,
 
-    // ⭐ Difficulty: only 3 allowed values
     difficulty: {
       type: String,
       enum: ["Easy", "Medium", "Hard"],
       required: true,
     },
 
-    // ⭐ Diet preference: fixed safe options only (NO HALAL)
     dietPreference: {
       type: String,
       default: "None",

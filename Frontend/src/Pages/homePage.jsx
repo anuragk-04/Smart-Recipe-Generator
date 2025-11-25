@@ -17,10 +17,11 @@ import RecipeCard from "../Components/recipeCard";
 
 const HomePage = () => {
   const navigate = useNavigate();
+
   const [recipes, setRecipes] = useState([]);
+
   const [loading, setLoading] = useState(true);
 
-  // Filters
   const [dietFilter, setDietFilter] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("");
 
@@ -29,6 +30,7 @@ const HomePage = () => {
     if (!token) navigate("/");
   }, [navigate]);
 
+  // Load recommended recipes on page mount
   useEffect(() => {
     const fetchHomeRecipes = async () => {
       try {
@@ -54,7 +56,6 @@ const HomePage = () => {
     >
       <Navbar />
 
-      {/* HERO */}
       <Container sx={{ mt: 10, textAlign: "center" }}>
         <Typography
           variant="h3"
@@ -99,14 +100,14 @@ const HomePage = () => {
         </Button>
       </Container>
 
-      {/* FILTERS */}
+      {/* ---------------------------- Filters Section ---------------------------- */}
       <Container sx={{ mt: 8 }}>
         <Typography variant="h5" fontWeight={700} mb={2}>
           Filters
         </Typography>
 
         <Box sx={{ display: "flex", gap: 4, flexWrap: "wrap", mb: 4 }}>
-          {/* Diet Filter */}
+          
           <ToggleButtonGroup
             value={dietFilter}
             exclusive
@@ -121,7 +122,6 @@ const HomePage = () => {
             <ToggleButton value="Keto">Keto</ToggleButton>
           </ToggleButtonGroup>
 
-          {/* Difficulty Filter */}
           <ToggleButtonGroup
             value={difficultyFilter}
             exclusive
@@ -133,13 +133,15 @@ const HomePage = () => {
             <ToggleButton value="Medium">Medium</ToggleButton>
             <ToggleButton value="Hard">Hard</ToggleButton>
           </ToggleButtonGroup>
+
         </Box>
 
-        {/* Recipes Section */}
+        {/* ---------------------------- Recommended Recipes ---------------------------- */}
         <Typography variant="h4" fontWeight={700} color="primary" mb={3}>
           Recommended for You 🍳
         </Typography>
 
+        {/* Loader */}
         {loading && (
           <Box textAlign="center" mt={5}>
             <CircularProgress size={45} />

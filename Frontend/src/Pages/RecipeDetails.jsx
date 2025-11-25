@@ -22,6 +22,7 @@ const RecipeDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -60,9 +61,9 @@ const RecipeDetails = () => {
   }, [id]);
 
   const handleImageError = (e) => {
-      e.target.onerror = null; // prevents infinite fallback loop
-      e.target.src = fallbackImg;
-    };
+    e.target.onerror = null;
+    e.target.src = fallbackImg;
+  };
 
   const handleFavorite = async () => {
     try {
@@ -128,7 +129,6 @@ const RecipeDetails = () => {
           />
 
           <Box sx={{ p: 4 }}>
-            {/* HEADER AREA */}
             <Box
               display="flex"
               justifyContent="space-between"
@@ -136,7 +136,6 @@ const RecipeDetails = () => {
               flexWrap="wrap"
               gap={2}
             >
-              {/* Title + Author */}
               <Box>
                 <Typography variant="h4" fontWeight={800}>
                   {recipe.name}
@@ -147,7 +146,6 @@ const RecipeDetails = () => {
                 </Typography>
               </Box>
 
-              {/* Favorites + Rating */}
               <Box display="flex" flexDirection="column" alignItems="flex-end">
                 <Button
                   onClick={handleFavorite}
@@ -166,6 +164,7 @@ const RecipeDetails = () => {
                   {isFavorite ? "Favorited" : "Add to Favorites"}
                 </Button>
 
+                {/* Rating input */}
                 <Box display="flex" alignItems="center" gap={1} mt={1}>
                   <Rating
                     value={userRating || 0}
@@ -179,19 +178,17 @@ const RecipeDetails = () => {
               </Box>
             </Box>
 
-            {/* Average rating - below header */}
             <Typography mt={1} fontSize="1rem" color="text.secondary">
               ⭐ {recipe.averageRating ? recipe.averageRating.toFixed(1) : "0.0"}{" "}
               ({recipe.ratings?.length || 0} ratings)
             </Typography>
 
-            {/* TIME + DIET */}
             <Typography mt={2} color="text.secondary">
               ⏳ {recipe.cookingTime} mins • 🍽️ {recipe.difficulty} • 🥗{" "}
               {recipe.dietPreference}
             </Typography>
 
-            {/* NUTRITION */}
+            {/* Nutrition section */}
             {recipe.nutrition && (
               <>
                 <Typography variant="h6" mt={4} fontWeight={700}>
@@ -214,7 +211,7 @@ const RecipeDetails = () => {
               </>
             )}
 
-            {/* INGREDIENTS */}
+            {/* Ingredients list */}
             <Typography variant="h6" mt={4} fontWeight={700}>
               Ingredients
             </Typography>
@@ -225,7 +222,7 @@ const RecipeDetails = () => {
               ))}
             </Box>
 
-            {/* INSTRUCTIONS */}
+            {/* Step-by-step instructions */}
             <Typography variant="h6" mt={4} fontWeight={700}>
               Instructions
             </Typography>

@@ -42,10 +42,8 @@ const Signup = () => {
         { name, email, password }
       );
 
-      // Save token for authentication
       localStorage.setItem("token", res.data.token);
 
-      // Redirect after successful registration
       navigate("/home");
     } catch (err) {
       console.error(err);
@@ -117,7 +115,6 @@ const Signup = () => {
           gap={3}
           onSubmit={handleSignup}
         >
-          {/* Full Name */}
           <TextField
             label="Full Name"
             variant="outlined"
@@ -138,7 +135,6 @@ const Signup = () => {
             }}
           />
 
-          {/* Email */}
           <TextField
             label="Email"
             type="email"
@@ -160,7 +156,6 @@ const Signup = () => {
             }}
           />
 
-          {/* Password */}
           <TextField
             label="Password"
             type={showPassword ? "text" : "password"}

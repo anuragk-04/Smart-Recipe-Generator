@@ -16,9 +16,9 @@ export const rateRecipe = async (req, res) => {
   );
 
   if (existing) {
-    existing.rating = rating; // ✅ update correct field
+    existing.rating = rating;
   } else {
-    recipe.ratings.push({ user: userId, rating }); // ✅ match schema
+    recipe.ratings.push({ user: userId, rating }); 
   }
 
   const total = recipe.ratings.reduce((sum, r) => sum + r.rating, 0);

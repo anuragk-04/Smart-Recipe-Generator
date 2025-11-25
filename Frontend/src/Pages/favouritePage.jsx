@@ -7,14 +7,16 @@ import { useNavigate } from "react-router-dom";
 
 const FavouritePage = () => {
   const [favorites, setFavorites] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
 
   const fetchFavorites = async () => {
     try {
       const res = await api.get("/api/favorites");
-
       console.log("Favorite response:", res.data);
+
       setFavorites(res.data.recipes || []);
     } catch (err) {
       console.error("Failed to fetch favorites:", err);
@@ -24,12 +26,18 @@ const FavouritePage = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (!token) navigate("/");
     else fetchFavorites();
   }, []);
 
   return (
-    <Box sx={{ minHeight: "100vh", background: "linear-gradient(135deg,#E3F2FD,#E8EAF6)" }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg,#E3F2FD,#E8EAF6)",
+      }}
+    >
       <Navbar />
 
       <Container sx={{ mt: 10 }}>

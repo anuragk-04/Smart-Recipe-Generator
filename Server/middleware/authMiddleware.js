@@ -10,7 +10,6 @@ export const auth = async (req, res, next) => {
       return res.status(401).json({ message: "Not authorized, no token" });
     }
 
-    // Remove "Bearer "
     if (token.startsWith("Bearer ")) {
       token = token.split(" ")[1];
     }
