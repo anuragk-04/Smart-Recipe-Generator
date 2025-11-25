@@ -27,7 +27,7 @@ export const getSingleRecipe = async (req, res) => {
   }
 };
 
-// PERSONALIZED RECOMMENDATIONS (NULL-SAFE)
+// PERSONALIZED RECOMMENDATIONS
 export const getRecommendedRecipes = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
