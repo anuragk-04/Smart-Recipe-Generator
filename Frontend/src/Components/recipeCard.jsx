@@ -1,7 +1,15 @@
 import React from "react";
 import { Paper, Typography, Box, Rating } from "@mui/material";
 
+import fallbackImg from "../assets/Recipes-Fallback.png";
+
 const RecipeCard = ({ recipe, onClick }) => {
+  // Replaces the recipe image with a fallback if the original fails to load
+  const handleImageError = (e) => {
+    e.target.onerror = null; 
+    e.target.src = fallbackImg;
+  };
+
   return (
     <Paper
       elevation={4}
@@ -17,9 +25,11 @@ const RecipeCard = ({ recipe, onClick }) => {
       }}
       onClick={onClick}
     >
+      {/* Recipe Image */}
       <img
         src={recipe.image}
         alt={recipe.name}
+        onError={handleImageError}
         style={{
           width: "100%",
           height: "200px",
@@ -28,11 +38,12 @@ const RecipeCard = ({ recipe, onClick }) => {
         }}
       />
 
+      {/* Title */}
       <Typography variant="h6" fontWeight={700} mt={2}>
         {recipe.name}
       </Typography>
 
-      {/* ✅ Average Rating */}
+      {/* Rating Indicator */}
       <Box display="flex" alignItems="center" gap={0.7} mt={0.5}>
         <Rating
           value={recipe.averageRating || 0}
@@ -45,6 +56,7 @@ const RecipeCard = ({ recipe, onClick }) => {
         </Typography>
       </Box>
 
+      {/* Cooking Time + Difficulty */}
       <Typography variant="body2" color="text.secondary" mt={0.5}>
         {recipe.cookingTime} mins • {recipe.difficulty}
       </Typography>

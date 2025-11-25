@@ -39,76 +39,64 @@ export const getRecommendedRecipes = async (req, res) => {
 
     const allRecipes = await Recipe.find().lean();
 
-    const favoriteIds = new Set(user.favorites.map((r) => r._id.toString()));
-
-    //  Collect weighted ingredient preferences based on user ratings
+    // --- Ingredient preference weight map ---
     const ingredientWeight = {};
-    const dietWeight = {};      
 
-    //  From favorites → strong preference
+    // --- 1. Add strong weight for Favorite Recipes ingredients ---
     user.favorites.forEach((rec) => {
       (rec.ingredients || []).forEach((ing) => {
         const key = ing.toLowerCase();
         ingredientWeight[key] = (ingredientWeight[key] || 0) + 5;
       });
-
-      if (rec.dietPreference)
-        dietWeight[rec.dietPreference] = (dietWeight[rec.dietPreference] || 0) + 5;
     });
 
-    //  From ratings — weighted by rating value
+    // --- 2. Add weight from recipes user rated >= 4 ---
     user.ratings.forEach(({ recipe, rating }) => {
       if (!recipe) return;
 
-      (recipe.ingredients || []).forEach((ing) => {
-        const key = ing.toLowerCase();
-        ingredientWeight[key] = (ingredientWeight[key] || 0) + rating * 2;
-      });
-
-      if (recipe.dietPreference)
-        dietWeight[recipe.dietPreference] =
-          (dietWeight[recipe.dietPreference] || 0) + rating * 2;
+      if (rating >= 4) {
+        (recipe.ingredients || []).forEach((ing) => {
+          const key = ing.toLowerCase();
+          ingredientWeight[key] = (ingredientWeight[key] || 0) + 3;
+        });
+      }
     });
 
-    //  Score all recipes
-    const scored = allRecipes.map((recipe) => {
+    // --- 3. Score each recipe globally ---
+    const scored = allRecipes.map((rec) => {
       let score = 0;
 
-      // User marked favorite → big boost
-      if (favoriteIds.has(recipe._id.toString())) score += 100;
-
-      //  Ingredient similarity score
-      (recipe.ingredients || []).forEach((ing) => {
+      // Ingredient match score
+      (rec.ingredients || []).forEach((ing) => {
         const key = ing.toLowerCase();
         if (ingredientWeight[key]) score += ingredientWeight[key];
       });
 
-      //  Similar diet preference
-      if (recipe.dietPreference && dietWeight[recipe.dietPreference])
-        score += dietWeight[recipe.dietPreference] * 2;
+      // Recipe rating weight (makes good recipes appear higher)
+      score += (rec.averageRating || 0) * 2;
 
-      //  Global popularity
-      score += (recipe.averageRating || 0) * 4; // rating weight
-      score += (recipe.favoriteCount || 0) * 2; // trending weight
-
-      return { ...recipe, score };
+      return { ...rec, score };
     });
 
-    //  Sort highest score first
+    // --- 4. Sort (highest score first) ---
     scored.sort((a, b) => b.score - a.score);
 
-    res.status(200).json({ success: true, recipes: scored });
+    return res.status(200).json({ success: true, recipes: scored });
   } catch (error) {
     console.error("Recommendation error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
 
-
 export const generateSmartRecipes = async (req, res) => {
   try {
-    const { ingredients, dietPreference } = req.body;
+    const {
+      ingredients = [],
+      dietPreference = null, // string
+      difficulty = null,     // string
+    } = req.body;
+
     const user = await User.findById(req.user.id)
       .populate("favorites")
       .populate("ratings.recipe");
@@ -117,63 +105,105 @@ export const generateSmartRecipes = async (req, res) => {
 
     const favoriteIds = new Set(user.favorites.map((r) => r._id.toString()));
 
+    // -----------------------------------------------------
+    // 1️⃣ Build user preference weights
+    // -----------------------------------------------------
     const ingredientWeight = {};
     const dietWeight = {};
 
-    // ✅ Learn from favorite recipes
+    // Favorites → strong preference
     user.favorites.forEach((rec) => {
       (rec.ingredients || []).forEach((ing) => {
         const key = ing.toLowerCase();
         ingredientWeight[key] = (ingredientWeight[key] || 0) + 6;
       });
+
       if (rec.dietPreference)
-        dietWeight[rec.dietPreference] = (dietWeight[rec.dietPreference] || 0) + 6;
+        dietWeight[rec.dietPreference] =
+          (dietWeight[rec.dietPreference] || 0) + 6;
     });
 
-    // ✅ Learn from ratings — weighted
+    // Ratings → rating-based weights
     user.ratings.forEach(({ recipe, rating }) => {
       if (!recipe) return;
+
       (recipe.ingredients || []).forEach((ing) => {
         const key = ing.toLowerCase();
         ingredientWeight[key] = (ingredientWeight[key] || 0) + rating * 2;
       });
+
       if (recipe.dietPreference)
         dietWeight[recipe.dietPreference] =
           (dietWeight[recipe.dietPreference] || 0) + rating * 2;
     });
 
-    // ✅ Score only recipes containing requested ingredients
-    const scored = allRecipes
-      .filter((recipe) =>
-        recipe.ingredients.some((ing) =>
-          ingredients.includes(ing.toLowerCase())
-        )
-      )
-      .map((recipe) => {
-        let score = 0;
+    // -----------------------------------------------------
+    // 2️⃣ Apply filters: dietPreference + difficulty
+    // -----------------------------------------------------
+    const applyFilters = (recipe) => {
+      // Diet filter
+      if (dietPreference && recipe.dietPreference !== dietPreference)
+        return false;
 
-        if (favoriteIds.has(recipe._id.toString())) score += 80;
+      // Difficulty filter
+      if (difficulty && recipe.difficulty !== difficulty)
+        return false;
 
-        (recipe.ingredients || []).forEach((ing) => {
-          const key = ing.toLowerCase();
-          if (ingredientWeight[key]) score += ingredientWeight[key];
-        });
+      return true;
+    };
 
-        if (dietPreference && recipe.dietPreference === dietPreference) score += 10;
+    // -----------------------------------------------------
+    // 3️⃣ Filter by ingredients + user filters
+    // -----------------------------------------------------
+    const filteredRecipes = allRecipes.filter((recipe) => {
+      const hasIngredientMatch = recipe.ingredients.some((ing) =>
+        ingredients.includes(ing.toLowerCase())
+      );
 
-        if (recipe.averageRating) score += recipe.averageRating * 4;
-        if (recipe.favoriteCount) score += recipe.favoriteCount * 2;
+      if (!hasIngredientMatch) return false;
 
-        return { ...recipe, score };
+      return applyFilters(recipe);
+    });
+
+    // -----------------------------------------------------
+    // 4️⃣ Score recipes
+    // -----------------------------------------------------
+    const scored = filteredRecipes.map((recipe) => {
+      let score = 0;
+
+      // Favorite recipes are pushed on top
+      if (favoriteIds.has(recipe._id.toString())) score += 80;
+
+      // Ingredient similarity boost
+      (recipe.ingredients || []).forEach((ing) => {
+        const key = ing.toLowerCase();
+        if (ingredientWeight[key]) score += ingredientWeight[key];
       });
 
+      // Diet preference match boost
+      if (dietPreference && recipe.dietPreference === dietPreference)
+        score += 10;
+
+      // Quality signals
+      if (recipe.averageRating) score += recipe.averageRating * 4;
+      if (recipe.favoriteCount) score += recipe.favoriteCount * 2;
+
+      return { ...recipe, score };
+    });
+
+    // -----------------------------------------------------
+    // 5️⃣ Sort by score (descending)
+    // -----------------------------------------------------
     scored.sort((a, b) => b.score - a.score);
 
-    res.status(200).json({ success: true, recipes: scored });
+    return res.status(200).json({ success: true, recipes: scored });
+
   } catch (err) {
+    console.error("Smart Recipe Error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 
 export const publishRecipe = async (req, res) => {

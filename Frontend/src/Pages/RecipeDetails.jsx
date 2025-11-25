@@ -16,6 +16,7 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../Components/navbar";
 import api from "../api/axiosInstance";
+import fallbackImg from "../assets/Recipes-Fallback.png";
 
 const RecipeDetails = () => {
   const { id } = useParams();
@@ -57,6 +58,11 @@ const RecipeDetails = () => {
     if (!token) navigate("/");
     else fetchRecipe();
   }, [id]);
+
+  const handleImageError = (e) => {
+      e.target.onerror = null; // prevents infinite fallback loop
+      e.target.src = fallbackImg;
+    };
 
   const handleFavorite = async () => {
     try {
@@ -117,6 +123,7 @@ const RecipeDetails = () => {
           <img
             src={recipe.image}
             alt={recipe.name}
+            onError={handleImageError}
             style={{ width: "100%", height: "350px", objectFit: "cover" }}
           />
 

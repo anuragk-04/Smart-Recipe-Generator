@@ -59,7 +59,7 @@ const Navbar = () => {
           }}
           onClick={() => navigate("/home")}
         >
-          SmartRecipe
+          Apni Kitchen
         </Typography>
 
         {/* DESKTOP MENU */}

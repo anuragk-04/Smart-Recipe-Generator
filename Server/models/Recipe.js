@@ -9,20 +9,31 @@ const nutritionSchema = new mongoose.Schema({
   calories: { type: Number, default: 0 },
   protein: { type: Number, default: 0 },
   carbs: { type: Number, default: 0 },
-  fat: { type: Number, default: 0 }, 
+  fat: { type: Number, default: 0 },
 });
 
 const recipeSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     image: String,
-    ingredients: { type: [String], required: true },
 
+    ingredients: { type: [String], required: true },
     instructions: { type: [String], required: true },
 
     cookingTime: Number,
-    difficulty: String,
-    dietPreference: String,
+
+    // ⭐ Difficulty: only 3 allowed values
+    difficulty: {
+      type: String,
+      enum: ["Easy", "Medium", "Hard"],
+      required: true,
+    },
+
+    // ⭐ Diet preference: fixed safe options only (NO HALAL)
+    dietPreference: {
+      type: String,
+      default: "None",
+    },
 
     nutrition: nutritionSchema,
 

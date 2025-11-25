@@ -5,6 +5,8 @@ import {
   Container,
   Button,
   CircularProgress,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
@@ -18,18 +20,19 @@ const HomePage = () => {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  //  Redirect if user isn’t logged in
+  // Filters
+  const [dietFilter, setDietFilter] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState("");
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) navigate("/");
   }, [navigate]);
 
-  //  Fetch all recipes sorted: favorites → rating → newest
   useEffect(() => {
     const fetchHomeRecipes = async () => {
       try {
         const res = await api.get("/api/recipes/recommended");
-        console.log(res);
         setRecipes(res.data.recipes || []);
       } catch (err) {
         console.error("Failed to fetch home recipes:", err);
@@ -51,7 +54,7 @@ const HomePage = () => {
     >
       <Navbar />
 
-      {/* HERO SECTION */}
+      {/* HERO */}
       <Container sx={{ mt: 10, textAlign: "center" }}>
         <Typography
           variant="h3"
@@ -63,7 +66,7 @@ const HomePage = () => {
             mb: 2,
           }}
         >
-          Welcome to SmartRecipe 🍽️
+          Welcome to Apni Kitchen 🍽️
         </Typography>
 
         <Typography
@@ -76,8 +79,7 @@ const HomePage = () => {
             mb: 4,
           }}
         >
-          Explore every recipe — starting with your favorites, top-rated dishes,
-          and exciting new finds 🎯
+          Explore personalized recipes based on your tastes 🌟
         </Typography>
 
         <Button
@@ -97,20 +99,53 @@ const HomePage = () => {
         </Button>
       </Container>
 
-      {/* ALL RECIPES SECTION */}
-      <Container sx={{ mt: 10 }}>
-        <Typography variant="h4" fontWeight={700} color="primary" mb={3}>
-          All Recipes — Personalized Order 🍳
+      {/* FILTERS */}
+      <Container sx={{ mt: 8 }}>
+        <Typography variant="h5" fontWeight={700} mb={2}>
+          Filters
         </Typography>
 
-        {/* Loading Spinner */}
+        <Box sx={{ display: "flex", gap: 4, flexWrap: "wrap", mb: 4 }}>
+          {/* Diet Filter */}
+          <ToggleButtonGroup
+            value={dietFilter}
+            exclusive
+            onChange={(e, v) => setDietFilter(v)}
+            sx={{ flexWrap: "wrap" }}
+          >
+            <ToggleButton value="">All Diets</ToggleButton>
+            <ToggleButton value="Vegetarian">Vegetarian</ToggleButton>
+            <ToggleButton value="Vegan">Vegan</ToggleButton>
+            <ToggleButton value="Gluten-Free">Gluten-Free</ToggleButton>
+            <ToggleButton value="Dairy-Free">Dairy-Free</ToggleButton>
+            <ToggleButton value="Keto">Keto</ToggleButton>
+          </ToggleButtonGroup>
+
+          {/* Difficulty Filter */}
+          <ToggleButtonGroup
+            value={difficultyFilter}
+            exclusive
+            onChange={(e, v) => setDifficultyFilter(v)}
+            sx={{ flexWrap: "wrap" }}
+          >
+            <ToggleButton value="">All Levels</ToggleButton>
+            <ToggleButton value="Easy">Easy</ToggleButton>
+            <ToggleButton value="Medium">Medium</ToggleButton>
+            <ToggleButton value="Hard">Hard</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        {/* Recipes Section */}
+        <Typography variant="h4" fontWeight={700} color="primary" mb={3}>
+          Recommended for You 🍳
+        </Typography>
+
         {loading && (
           <Box textAlign="center" mt={5}>
             <CircularProgress size={45} />
           </Box>
         )}
 
-        {/* Recipes Grid */}
         {!loading && recipes.length > 0 && (
           <Box
             sx={{
@@ -121,20 +156,25 @@ const HomePage = () => {
                 md: "1fr 1fr 1fr",
               },
               gap: 4,
-              maxWidth: "100%",
             }}
           >
-            {recipes.map((recipe) => (
-              <RecipeCard
-                key={recipe._id}
-                recipe={recipe}
-                onClick={() => navigate(`/recipe/${recipe._id}`)}
-              />
-            ))}
+            {recipes
+              .filter((r) =>
+                dietFilter ? r.dietPreference === dietFilter : true
+              )
+              .filter((r) =>
+                difficultyFilter ? r.difficulty === difficultyFilter : true
+              )
+              .map((recipe) => (
+                <RecipeCard
+                  key={recipe._id}
+                  recipe={recipe}
+                  onClick={() => navigate(`/recipe/${recipe._id}`)}
+                />
+              ))}
           </Box>
         )}
 
-        {/* Empty state */}
         {!loading && recipes.length === 0 && (
           <Typography variant="h6" color="text.secondary" mt={3}>
             No recipes available yet — be the first to create one!
