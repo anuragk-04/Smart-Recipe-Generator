@@ -12,7 +12,7 @@ import rateLimit from "express-rate-limit";
 const app = express();
 
 // Security & Performance Middleware
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(compression());
 
 // Rate Limiting
