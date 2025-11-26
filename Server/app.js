@@ -27,7 +27,7 @@ app.use(
   cors({
 
     origin: (origin, callback) => {
-      const raw = process.env.FRONTEND_URL || "http://localhost:5173,https://apni-kitchen.netlify.app";
+      const raw = process.env.FRONTEND_URL || "http://localhost:5173,https://smart-recipe-generator-1-7i69.onrender.com";
       const allowed = raw.split(",").map((u) => u.trim().replace(/\/$/, ""));
 
       // Allow non-browser requests (e.g. curl, server-to-server) where origin is undefined
