@@ -40,6 +40,7 @@ const RecipeDetails = () => {
 
       setRecipe(recipeData);
       setIsFavorite(res.data.isFavorite);
+      setUserRating(res.data.userRating);
 
       // Servings + ingredients
       setCurrentServings(recipeData.servingSize || 1);
