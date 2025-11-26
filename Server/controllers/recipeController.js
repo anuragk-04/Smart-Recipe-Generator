@@ -12,10 +12,21 @@ export const getSingleRecipe = async (req, res) => {
 
     const user = await User.findById(req.user.id);
 
-    const isFavorite = user.favorites
+    const userFavorites = Array.isArray(user?.favorites) ? user.favorites : [];
+    const userRatings = Array.isArray(user?.ratings) ? user.ratings : [];
+
+    // Check if favorited
+    const isFavorite = userFavorites
       .map((r) => r.toString())
       .includes(recipe._id.toString());
 
+    // Check if user has rated this recipe before
+    const ratingObj = userRatings.find(
+      (r) => r.recipe.toString() === recipe._id.toString()
+    );
+
+    const userRating = ratingObj ? ratingObj.rating : null;
+    
     return res.status(200).json({
       success: true,
       recipe,
