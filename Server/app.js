@@ -27,18 +27,35 @@ app.use(
   cors({
 
     origin: (origin, callback) => {
-      const raw = process.env.FRONTEND_URL || "http://localhost:5173,https://smart-recipe-generator-1-7i69.onrender.com";
-      const allowed = raw.split(",").map((u) => u.trim().replace(/\/$/, ""));
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "https://apni-kitchen.netlify.app",
+        "https://smart-recipe-generator-1-7i69.onrender.com",
+        "https://smart-recipe-generator-u12o.onrender.com"
+      ];
+
+      if (process.env.FRONTEND_URL) {
+        allowedOrigins.push(...process.env.FRONTEND_URL.split(",").map(u => u.trim()));
+      }
 
       // Allow non-browser requests (e.g. curl, server-to-server) where origin is undefined
       if (!origin) return callback(null, true);
+
       const normalized = origin.replace(/\/$/, "");
-      if (allowed.includes(normalized)) return callback(null, true);
+      if (allowedOrigins.some(allowed => normalized === allowed.replace(/\/$/, ""))) {
+        return callback(null, true);
+      }
+
+      console.log("Blocked by CORS:", origin); // Log blocked origins for debugging
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
+
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "Server is running", dbStatus: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected" });
+});
 
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true }));
